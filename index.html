@@ -1634,6 +1634,25 @@
       background: #fafafa;
     }
   }
+
+  .tabs { display: flex; gap: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 8px 0 12px; font-size: 15px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all var(--t); margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); }
+  
+  .team-card { padding: 18px 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); margin-bottom: 12px; cursor: pointer; transition: background var(--t), box-shadow var(--t); }
+  .team-card:hover { background: var(--surface-2); box-shadow: var(--shadow-sm); }
+  .team-name { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .team-desc { font-size: 14px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+  .team-meta { font-size: 12px; color: var(--subtle); margin-top: 10px; display: flex; gap: 12px; }
+
+  .members-list { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 12px; }
+  .member-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .member-row:last-child { border-bottom: none; }
+  .member-email { font-size: 13px; color: var(--text); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .member-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .role-select { padding: 4px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid transparent; font-size: 11px; font-weight: 500; color: var(--text); cursor: pointer; }
+  .role-select:focus { border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -1659,7 +1678,13 @@
       </div>
     </div>
 
-    <h1 class="home-heading" id="homeHeading">Your Meetings</h1>
+        <div class="tabs" id="homeTabs">
+      <div class="tab active" data-tab="meetings">Meetings</div>
+      <div class="tab" data-tab="teams">Teams</div>
+    </div>
+
+    <div id="viewMeetings">
+      <h1 class="home-heading" id="homeHeading">Your Meetings</h1>
     <p class="home-sub" id="homeSub">Pick one to open or start a new one.</p>
 
     <button class="new-meeting-btn" id="openNewMeeting">
@@ -1668,6 +1693,19 @@
     </button>
 
     <div id="meetingGroups"></div>
+    </div>
+
+    <div id="viewTeams" style="display: none;">
+      <h1 class="home-heading">Your Teams</h1>
+      <p class="home-sub">Create and manage shared workspaces.</p>
+
+      <button class="new-meeting-btn" id="openNewTeamBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create Team
+      </button>
+
+      <div id="teamList"></div>
+    </div>
   </div>
 </div>
 
@@ -1684,6 +1722,12 @@
         <div><kbd>Space</kbd></div><div>Pause / resume meeting timer</div>
         <div><kbd>Esc</kbd></div><div>Close panel · back to summary</div>
         <div><kbd>?</kbd></div><div>Show this help</div>
+      </div>
+      <div class="field" style="margin-top: 8px;">
+        <label class="field-label-sm" for="meetingVisibility">Share with</label>
+        <select id="meetingVisibility" class="modal-input" style="padding: 9px 12px; cursor: pointer;">
+          <option value="private">Private (Only me)</option>
+        </select>
       </div>
       <div class="modal-actions">
         <button class="primary-btn" data-close>Got it</button>
@@ -1728,6 +1772,56 @@
         </div>
       </div>
       <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Team Modal -->
+<div class="modal-scrim" id="teamModal" role="dialog" aria-modal="true">
+  <div class="modal-card" style="max-width: 480px; grid-template-columns: 1fr;">
+    <div class="modal-left">
+      <div class="modal-eyebrow" id="teamModalEyebrow">Create Team</div>
+      <h2 class="modal-heading" id="teamModalHeading" style="margin-bottom: 8px;">Team Profile</h2>
+      <div class="field">
+        <label class="field-label-sm">Team Name</label>
+        <input id="teamNameInput" class="modal-input" placeholder="e.g. Product Team" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="field-label-sm">Description (Optional)</label>
+        <input id="teamDescInput" class="modal-input" placeholder="What is this team for?" autocomplete="off" />
+      </div>
+      <div class="field" style="margin-top: 12px;">
+        <label class="field-label-sm">Add Members</label>
+        <div style="display:flex; gap:8px;">
+          <input id="teamEmailInput" class="modal-input" placeholder="colleague@example.com" style="flex:1;" autocomplete="off" />
+          <button class="primary-btn" id="addMemberBtn">Add</button>
+        </div>
+      </div>
+      <div class="members-list" id="membersList"></div>
+      <div class="modal-actions" style="margin-top: 24px;">
+        <button class="ghost-btn" id="cancelTeamBtn">Close</button>
+        <button class="primary-btn" id="saveTeamBtn">Save Team</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Meeting Modal -->
+<div class="modal-scrim" id="shareModal" role="dialog" aria-modal="true">
+  <div class="modal-card" style="max-width: 400px; grid-template-columns: 1fr;">
+    <div class="modal-left" style="padding: 24px;">
+      <h2 class="modal-heading" style="margin-bottom: 16px;">Share Meeting</h2>
+      <div class="field">
+        <label class="field-label-sm">Visibility</label>
+        <select id="shareVisibility" class="modal-input" style="padding: 9px 12px; cursor: pointer;">
+          <option value="private">Private (Only me)</option>
+        </select>
+      </div>
+      <div class="modal-actions" style="margin-top: 24px;">
+        <button class="ghost-btn" id="cancelShareBtn">Cancel</button>
+        <button class="primary-btn" id="saveShareBtn">Save changes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1778,6 +1872,7 @@
         <div class="crumb" id="crumb">Meeting</div>
       </div>
       <div class="topbar-actions">
+        <button class="ghost-btn" id="topbarShareBtn" style="padding: 6px 12px; font-size: 12px; font-weight: 600;">Share</button>
         <div class="timer" id="timer" title="Total time spent in this meeting">
           <span class="timer-label" aria-hidden="true">Meeting</span>
           <button class="timer-btn" id="timerToggle" title="Pause / resume meeting session (Space)" aria-label="Pause or resume meeting timer">
@@ -1975,14 +2070,16 @@ const newMeeting = (title='', date=todayISO()) => ({
 
 const defaultState = () => ({
   meetings: [],
+  teams: [],
   currentId: null,
   theme: 'light',
   });
 
 let state = load();
+state.teams = state.teams || [];
 function load() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = getStorage();
     if (raw) {
       const parsed = JSON.parse(raw);
       const s = Object.assign(defaultState(), parsed);
@@ -1991,7 +2088,7 @@ function load() {
     }
     // Migrate from v3 (single meeting) / v1-v2 (no meeting wrapper)
     for (const key of LEGACY_KEYS) {
-      const legacy = localStorage.getItem(key);
+      const legacy = getStorage(key);
       if (!legacy) continue;
       const v = JSON.parse(legacy);
       const s = defaultState();
@@ -2028,6 +2125,8 @@ function normalizeMeeting(m) {
     statusFilter: m.statusFilter || 'all',
     selectedTaskId: m.selectedTaskId || null,
     durationSec: typeof m.durationSec === 'number' ? m.durationSec : 0,
+    visibility: m.visibility || 'private',
+    teamId: m.teamId || null,
     sessionStartedAt: m.sessionStartedAt || null,
     endedAt: m.endedAt || null,
     status: M_STATUSES.includes(m.status) ? m.status : 'scheduled',
@@ -2041,16 +2140,29 @@ function computeAutoStatus(m) {
   return 'ongoing';
 }
 
+
+
+let inMemoryStorage = {};
+const getStorage = (k = STORAGE_KEY) => {
+  try { return localStorage.getItem(k); } 
+  catch(e) { return inMemoryStorage[k] || null; }
+};
+const setStorage = (val, k = STORAGE_KEY) => {
+  try { localStorage.setItem(k, val); } 
+  catch(e) { inMemoryStorage[k] = val; }
+};
+
+
 const save = (() => {
   let t; return () => {
     clearTimeout(t);
     t = setTimeout(() => {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+      setStorage(JSON.stringify(state));
     }, 150);
   };
 })();
 const saveImmediate = () => {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  setStorage(JSON.stringify(state));
 };
 
 function cm() { return state.meetings.find(m => m.id === state.currentId); }
@@ -2342,6 +2454,8 @@ function renderCal() {
 
 function openNewMeeting() {
   pickedISO = todayISO();
+  populateVisibilityDropdown();
+  $('#meetingVisibility').value = 'private';
   const t = new Date();
   calView = { year: t.getFullYear(), month: t.getMonth() };
   meetingTitleInput.value = '';
@@ -2374,9 +2488,205 @@ meetingTitleInput.addEventListener('keydown', e => {
 });
 $('#createMeetingBtn').addEventListener('click', createMeeting);
 
+
+/* ============================== TEAMS LOGIC ============================== */
+let currentTeamMembers = [];
+let editingTeamId = null;
+
+function renderTeams() {
+  const list = $('#teamList');
+  if (!state.teams || !state.teams.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <h3>No teams yet</h3>
+        <p>Create a team to start sharing meetings and collaborating.</p>
+      </div>`;
+    return;
+  }
+  list.innerHTML = state.teams.map(t => `
+    <div class="team-card" data-id="${t.id}">
+      <div class="team-name">${escapeHTML(t.name)}</div>
+      ${t.description ? `<div class="team-desc">${escapeHTML(t.description)}</div>` : ''}
+      <div class="team-meta">
+        <span>👥 ${t.members.length} member${t.members.length===1?'':'s'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+$$('#homeTabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    $$('#homeTabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    if (tab.dataset.tab === 'meetings') {
+      $('#viewMeetings').style.display = '';
+      $('#viewTeams').style.display = 'none';
+    } else {
+      $('#viewMeetings').style.display = 'none';
+      $('#viewTeams').style.display = '';
+      renderTeams();
+    }
+  });
+});
+
+$('#teamList')?.addEventListener('click', e => {
+  const card = e.target.closest('.team-card');
+  if (card) openEditTeam(card.dataset.id);
+});
+
+function renderMembersList() {
+  const list = $('#membersList');
+  if (!currentTeamMembers.length) {
+    list.innerHTML = '<div style="padding: 12px; font-size: 13px; color: var(--subtle); text-align: center;">No members added yet.</div>';
+    return;
+  }
+  list.innerHTML = currentTeamMembers.map((m, i) => `
+    <div class="member-row">
+      <div class="member-email">${escapeHTML(m.email)}</div>
+      <div class="member-actions">
+        <select class="role-select" data-index="${i}">
+          <option value="owner" ${m.role==='owner'?'selected':''}>Owner</option>
+          <option value="editor" ${m.role==='editor'?'selected':''}>Editor</option>
+          <option value="viewer" ${m.role==='viewer'?'selected':''}>Viewer</option>
+        </select>
+        <button class="delete-btn" data-remove-index="${i}" title="Remove member" style="padding:4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  list.querySelectorAll('.role-select').forEach(sel => {
+    sel.addEventListener('change', e => {
+      currentTeamMembers[e.target.dataset.index].role = e.target.value;
+    });
+  });
+  list.querySelectorAll('[data-remove-index]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      currentTeamMembers.splice(e.target.closest('button').dataset.removeIndex, 1);
+      renderMembersList();
+    });
+  });
+}
+
+$('#openNewTeamBtn').addEventListener('click', () => {
+  editingTeamId = null;
+  $('#teamModalEyebrow').textContent = 'Create Team';
+  $('#teamNameInput').value = '';
+  $('#teamDescInput').value = '';
+  $('#teamEmailInput').value = '';
+  currentTeamMembers = [];
+  renderMembersList();
+  $('#teamModal').classList.add('show');
+  trapFocus($('#teamModal'), $('#teamNameInput'));
+});
+
+function openEditTeam(id) {
+  const t = state.teams.find(x => x.id === id);
+  if (!t) return;
+  editingTeamId = id;
+  $('#teamModalEyebrow').textContent = 'Edit Team';
+  $('#teamNameInput').value = t.name;
+  $('#teamDescInput').value = t.description || '';
+  $('#teamEmailInput').value = '';
+  currentTeamMembers = JSON.parse(JSON.stringify(t.members || []));
+  renderMembersList();
+  $('#teamModal').classList.add('show');
+  trapFocus($('#teamModal'), $('#teamNameInput'));
+}
+
+$('#cancelTeamBtn').addEventListener('click', () => {
+  $('#teamModal').classList.remove('show');
+  releaseFocus($('#teamModal'));
+});
+
+$('#addMemberBtn').addEventListener('click', () => {
+  const em = $('#teamEmailInput').value.trim();
+  if (!em) return;
+  const emails = em.split(',').map(e => e.trim()).filter(Boolean);
+  emails.forEach(email => {
+    if (!currentTeamMembers.find(m => m.email === email)) {
+      currentTeamMembers.push({ email, role: 'viewer' });
+    }
+  });
+  $('#teamEmailInput').value = '';
+  renderMembersList();
+});
+
+$('#teamEmailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); $('#addMemberBtn').click(); }
+});
+
+$('#saveTeamBtn').addEventListener('click', () => {
+  const name = $('#teamNameInput').value.trim();
+  if (!name) return alert('Team name is required');
+  
+  state.teams = state.teams || [];
+  if (editingTeamId) {
+    const t = state.teams.find(x => x.id === editingTeamId);
+    if (t) {
+      t.name = name;
+      t.description = $('#teamDescInput').value.trim();
+      t.members = currentTeamMembers;
+    }
+  } else {
+    state.teams.push({
+      id: uid(),
+      name,
+      description: $('#teamDescInput').value.trim(),
+      members: currentTeamMembers
+    });
+  }
+  saveImmediate();
+  $('#teamModal').classList.remove('show');
+  renderTeams();
+  populateVisibilityDropdown();
+});
+
+function populateVisibilityDropdown() {
+  const sels = [$('#meetingVisibility'), $('#shareVisibility')];
+  sels.forEach(sel => {
+    if (!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="private">Private (Only me)</option>';
+    (state.teams || []).forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">Share with: ${escapeHTML(t.name)}</option>`;
+    });
+    // Try to restore previous value if it exists in the new options
+    if (Array.from(sel.options).some(o => o.value === currentVal)) {
+      sel.value = currentVal;
+    }
+  });
+}
+
+// Share Meeting Modal Logic
+$('#topbarShareBtn')?.addEventListener('click', () => {
+  const m = cm(); if (!m) return;
+  populateVisibilityDropdown();
+  $('#shareVisibility').value = m.teamId || 'private';
+  $('#shareModal').classList.add('show');
+});
+$('#cancelShareBtn')?.addEventListener('click', () => {
+  $('#shareModal').classList.remove('show');
+});
+$('#saveShareBtn')?.addEventListener('click', () => {
+  const m = cm(); if (!m) return;
+  const val = $('#shareVisibility').value;
+  m.teamId = val === 'private' ? null : val;
+  m.visibility = m.teamId ? 'team' : 'private';
+  saveImmediate();
+  $('#shareModal').classList.remove('show');
+  renderMeetingHeader();
+});
+
+/* ========================================================================= */
+
 function createMeeting() {
   const title = meetingTitleInput.value.trim() || 'Untitled meeting';
   const m = newMeeting(title, pickedISO);
+  const teamVal = $('#meetingVisibility').value;
+  m.teamId = teamVal === 'private' ? null : teamVal;
+  m.visibility = m.teamId ? 'team' : 'private';
   // initial status: scheduled if future, else ongoing
   m.status = (pickedISO > todayISO()) ? 'scheduled' : 'ongoing';
   m.lastOpenedAt = new Date().toISOString();
@@ -2414,6 +2724,8 @@ const meetingDateDisplay  = $('#meetingDateDisplay');
 
 function renderMeetingHeader() {
   const m = cm(); if (!m) return;
+  const team = m.teamId ? (state.teams||[]).find(t => t.id === m.teamId) : null;
+  $('#topbarShareBtn').textContent = team ? 'Shared: ' + team.name : 'Share';
   meetingTitleDisplay.textContent = m.title || '';
   meetingDateDisplay.innerHTML = `
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -3551,5 +3863,5 @@ introTimer = setTimeout(() => dismissIntro(), 3000);
 saveImmediate();
 renderHome();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a057d1748f7f6e63',t:'MTc4MDQxNzU3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a058288f7a8802c2',t:'MTc4MDQyMTEzNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

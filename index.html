@@ -1,96 +1,3555 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script defer src="/_vercel/insights/script.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css"
-    />
-    <title>Vercel HTML Starter</title>
-    <meta
-      name="description"
-      content="High-performance HTML based website template."
-    />
-  </head>
-  <body>
-    <h1>Vercel HTML Starter</h1>
-    <p>
-      This template is a simple, but powerful single
-      <code>index.html</code> file deployed to
-      <a href="https://vercel.com">Vercel</a>. When your site is deployed, all
-      static assets (like HTML, JavaScript, CSS, images, and more) are deployed
-      globally to every
-      <a href="https://vercel.com/docs/concepts/edge-network/overview"
-        >Vercel Edge Network</a
-      >
-      region.
-    </p>
-    <h2>Simple, privacy-friendly analytics</h2>
-    <p>
-      Want to understand your visitor traffic? Vercel Analytics gives you
-      first-party, privacy-friendly traffic analytics for your HTML site. This
-      template is already configured using the following script:
-    </p>
-    <pre><code>&lt;script defer src="/_vercel/insights/script.js"&gt;&lt;/script&gt;</code></pre>
-    <p>
-      Learn more about
-      <a href="https://vercel.com/analytics">Vercel Analytics</a>.
-    </p>
-    <h2>Integrated with git</h2>
-    <p>
-      Deploying updates to your site is as simple as
-      <code>git push</code> thanks to Vercel's advanced
-      <a href="https://vercel.com/docs/concepts/git">Git Integration</a>.
-      Support for GitHub, GitLab, Bitbucket is zero-configuration, and with the
-      flexible Vercel CLI and API, you can integrate with any tool possible.
-    </p>
-    <p>
-      Learn more about
-      <a href="https://vercel.com/docs/concepts/git">Git Integration</a>.
-    </p>
-    <h2>Fast <code>gzip</code> compression</h2>
-    <p>
-      To help ensure the smallest possible file sizes for your static assets,
-      the Vercel Edge Network compresses files by default using
-      <code>gzip</code>. You can also optionally use
-      <code>brotli</code> compressesion if you prefer.
-    </p>
-    <p>
-      Learn more about
-      <a href="https://vercel.com/docs/concepts/edge-network/compression"
-        >compression</a
-      >.
-    </p>
-    <h2>Advanced routing configuration</h2>
-    <p>
-      Vercel gives you a variety of ways to configure the routing of your
-      website. For example, adding redirects, rewrites, or headers to your page.
-      While you can use <code>vercel.json</code> to define these through JSON,
-      you can also express your routing configuration as code using
-      <a href="https://vercel.com/docs/concepts/functions/edge-middleware"
-        >Vercel Edge Middleware</a
-      >.
-    </p>
-    <p>
-      Middleware runs before the
-      <a href="https://vercel.com/docs/concepts/edge-network/caching"
-        >Vercel Edge Network Cache</a
-      >, so you can configure routing exactly as your application needs. For
-      example, this template uses <code>middleware.js</code> defined in the root
-      of the repository to add additional security headers to the site:
-    </p>
-    <pre><code>referrer-policy: origin-when-cross-origin
-strict-transport-security: max-age=31536000; includeSubDomains; preload
-x-content-type-options: nosniff
-x-dns-prefetch-control: on
-x-frame-options: DENY</code></pre>
-    <p>
-      Learn more about
-      <a href="https://vercel.com/docs/concepts/functions/edge-middleware"
-        >Vercel Edge Middleware</a
-      >.
-    </p>
-  </body>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clarify — Meeting Companion</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --border: #ececec;
+    --text: #111111;
+    --muted: #5f5f66;
+    --subtle: #71717a;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --danger: #b91c1c;
+    --success: #15803d;
+    --success-soft: #ecfdf5;
+    --warn: #b45309;
+    --warn-soft: #fffbeb;
+    --abandoned: #6b6b70;
+    --abandoned-soft: #f4f4f5;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.06);
+    --shadow-lg: 0 20px 50px rgba(0,0,0,0.12);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --t: 200ms cubic-bezier(.2,.7,.2,1);
+  }
+  [data-theme="dark"] {
+    --bg: #0e0e10;
+    --surface: #161618;
+    --surface-2: #1d1d20;
+    --border: #28282c;
+    --text: #f5f5f7;
+    --muted: #a0a0a7;
+    --subtle: #6a6a72;
+    --accent: #818cf8;
+    --accent-soft: #1e1b3a;
+    --success: #4ade80;
+    --success-soft: #0f2a1c;
+    --warn: #fbbf24;
+    --warn-soft: #2a1f0a;
+    --abandoned: #a0a0a7;
+    --abandoned-soft: #1d1d20;
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.4);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* Accessibility: visible keyboard focus ring for all interactive elements.
+     Uses :focus-visible so mouse clicks don't show a ring, but keyboard nav does. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* Don't double up on elements that already render their own focus treatment */
+  .modal-input:focus-visible,
+  .add-input:focus-visible,
+  .meeting-title[contenteditable="true"]:focus-visible,
+  .agenda-title[contenteditable="true"]:focus-visible,
+  .focus-title[contenteditable="true"]:focus-visible { outline: none; }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Visually-hidden utility for screen-reader-only text */
+  .sr-only {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0);
+    white-space: nowrap; border: 0;
+  }
+
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background var(--t), color var(--t);
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; border: none; background: none; }
+  input, textarea, select { background: transparent; border: none; outline: none; }
+  ::placeholder { color: var(--subtle); }
+
+  /* ===================== LAUNCH / HOME SCREEN ===================== */
+  .home {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, var(--accent-soft) 0%, transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--accent-soft) 0%, transparent 55%),
+      var(--bg);
+    z-index: 100;
+    overflow-y: auto;
+    animation: fadeIn 300ms ease;
+  }
+  .home.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .home-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 28px 80px;
+  }
+  .home-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 36px;
+  }
+  .home-brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-weight: 600; letter-spacing: -0.01em;
+  }
+  .home-brand .brand-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+  }
+  .home-actions { display: flex; gap: 4px; }
+
+  .home-heading {
+    font-size: 32px; letter-spacing: -0.025em; font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .home-sub {
+    color: var(--muted); font-size: 15px; margin: 0 0 28px;
+  }
+
+  .new-meeting-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 18px;
+    background: var(--accent); color: white;
+    border-radius: 999px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow-md);
+    transition: opacity var(--t), transform var(--t), box-shadow var(--t);
+    margin-bottom: 36px;
+  }
+  .new-meeting-btn:hover { opacity: 0.95; box-shadow: var(--shadow-lg); }
+  .new-meeting-btn:active { transform: translateY(1px); }
+
+  /* Meeting list */
+  .meeting-group { margin-bottom: 26px; }
+  .meeting-group-label {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 0 4px 10px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--subtle); font-weight: 600;
+  }
+  .meeting-group-label .dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    margin-right: 8px; vertical-align: 1px;
+  }
+  .group-ongoing .dot   { background: var(--warn); }
+  .group-scheduled .dot { background: var(--accent); }
+  .group-done .dot      { background: var(--success); }
+
+  .meeting-list {
+    display: flex; flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .meeting-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background var(--t);
+    position: relative;
+  }
+  .meeting-row:last-child { border-bottom: none; }
+  .meeting-row:hover { background: var(--surface-2); }
+  .meeting-row:hover .meeting-row-actions { opacity: 1; }
+
+  .meeting-row-date {
+    flex-shrink: 0;
+    width: 48px;
+    text-align: center;
+    border-radius: 8px;
+    background: var(--surface-2);
+    padding: 6px 4px;
+    line-height: 1.1;
+  }
+  .meeting-row-date .mon {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--subtle); font-weight: 600;
+  }
+  .meeting-row-date .day {
+    font-size: 18px; font-weight: 600; letter-spacing: -0.01em;
+    color: var(--text);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .meeting-row.is-today .meeting-row-date {
+    background: var(--accent-soft);
+  }
+  .meeting-row.is-today .meeting-row-date .day { color: var(--accent); }
+  .meeting-row.is-today .meeting-row-date .mon { color: var(--accent); }
+
+  .meeting-row-body { flex: 1; min-width: 0; }
+  .meeting-row-title {
+    font-weight: 500; color: var(--text);
+    font-size: 15px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    letter-spacing: -0.005em;
+  }
+  .meeting-row-meta {
+    font-size: 12px; color: var(--muted);
+    margin-top: 3px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .meeting-row-meta .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  .status-tag {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-tag.ongoing   { background: var(--warn-soft);    color: var(--warn); }
+  .status-tag.scheduled { background: var(--accent-soft);  color: var(--accent); }
+  .status-tag.done      { background: var(--success-soft); color: var(--success); }
+
+  .meeting-row-actions {
+    display: flex; gap: 2px;
+    opacity: 0;
+    transition: opacity var(--t);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--subtle);
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+  }
+  .empty-state h3 {
+    color: var(--text); font-weight: 500;
+    margin: 0 0 6px;
+  }
+  .empty-state p { margin: 0; font-size: 14px; }
+
+  /* New-meeting modal */
+  .modal-scrim {
+    position: fixed; inset: 0;
+    background: rgba(10,10,15,0.35);
+    backdrop-filter: blur(3px);
+    z-index: 200;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    animation: fadeIn 180ms ease;
+  }
+  .modal-scrim.show { display: flex; }
+  .modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 720px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    animation: rise 260ms cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .modal-left { padding: 32px 30px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-eyebrow {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--subtle); font-weight: 600;
+  }
+  .modal-heading {
+    font-size: 22px; font-weight: 600; letter-spacing: -0.015em;
+    margin: 0;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label-sm {
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--subtle); font-weight: 600;
+  }
+  .modal-input {
+    padding: 11px 13px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    font-size: 15px;
+    transition: border-color var(--t), background var(--t);
+  }
+  .modal-input:focus { border-color: var(--accent); background: var(--surface); }
+  .selected-date {
+    font-size: 13px;
+    padding: 7px 11px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent);
+    display: inline-flex; align-items: center; gap: 6px;
+    width: fit-content;
+  }
+  .modal-actions {
+    margin-top: auto; display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+  }
+
+  .modal-right {
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+    padding: 24px 22px;
+    display: flex; flex-direction: column;
+    border-left: 1px solid var(--border);
+  }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .cal-month { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
+  .cal-nav { display: flex; gap: 2px; }
+  .cal-nav button {
+    width: 26px; height: 26px; border-radius: 7px;
+    color: var(--muted);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background var(--t), color var(--t);
+  }
+  .cal-nav button:hover { background: var(--surface); color: var(--text); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dow {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--subtle); text-align: center;
+    padding: 5px 0; font-weight: 600;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 7px;
+    font-size: 12px; font-variant-numeric: tabular-nums;
+    color: var(--text); cursor: pointer;
+    transition: background var(--t), color var(--t), transform var(--t);
+    position: relative;
+  }
+  .cal-day:hover { background: var(--surface); }
+  .cal-day.other { color: var(--subtle); opacity: 0.5; }
+  .cal-day.today { font-weight: 600; }
+  .cal-day.today::after {
+    content: ''; position: absolute; bottom: 3px;
+    width: 3px; height: 3px; background: var(--accent); border-radius: 50%;
+  }
+  .cal-day.selected { background: var(--accent); color: white; transform: scale(1.02); }
+  .cal-day.selected::after { background: white; }
+
+  /* ===================== APP / WORKSPACE ===================== */
+  .app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    min-width: 0;
+    transition: background var(--t), border-color var(--t);
+  }
+  .sidebar-header {
+    padding: 18px 22px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .meeting-meta-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 10px;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    padding: 4px 6px; border-radius: 6px;
+    margin-left: -6px;
+    transition: background var(--t), color var(--t);
+  }
+  .back-link:hover { background: var(--surface-2); color: var(--text); }
+  .meeting-title {
+    font-weight: 600; font-size: 17px;
+    letter-spacing: -0.01em;
+    line-height: 1.2; outline: none;
+    word-wrap: break-word;
+  }
+  .meeting-title[contenteditable="true"]:focus {
+    box-shadow: 0 0 0 2px var(--accent-soft);
+    border-radius: 6px;
+    padding: 2px 4px; margin: -2px -4px;
+  }
+  .meeting-date {
+    font-size: 12px; color: var(--muted); margin-top: 4px;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--muted);
+    transition: background var(--t), color var(--t), transform var(--t);
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+  .icon-btn:active { transform: scale(0.96); }
+
+  /* Theme toggle shows the icon for the mode you'll switch TO */
+  .theme-toggle .icon-sun { display: none; }
+  [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+  [data-theme="dark"] .theme-toggle .icon-sun { display: inline-flex; }
+
+  .section-label {
+    padding: 14px 22px 6px;
+    font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--subtle); font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .section-count {
+    background: var(--surface-2); color: var(--muted);
+    padding: 1px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 600;
+  }
+
+  .agenda-list { flex: 1; overflow-y: auto; padding: 4px 12px 12px; }
+  .agenda-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: background var(--t), transform var(--t);
+    position: relative;
+  }
+  .agenda-item:hover { background: var(--surface-2); }
+  .agenda-item.active { background: var(--accent-soft); }
+  .agenda-item.active .agenda-title { color: var(--accent); font-weight: 600; }
+  .agenda-item.dragging { opacity: 0.4; }
+  .agenda-item.drag-over { box-shadow: inset 0 2px 0 var(--accent); }
+  .agenda-handle {
+    color: var(--subtle); cursor: grab; display: flex;
+    opacity: 0; transition: opacity var(--t);
+  }
+  .agenda-item:hover .agenda-handle { opacity: 1; }
+  .agenda-index {
+    font-size: 12px; color: var(--subtle);
+    width: 20px; text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .agenda-title {
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text);
+  }
+  .agenda-title[contenteditable="true"] {
+    white-space: normal; outline: none;
+    background: var(--surface); border-radius: 6px;
+    padding: 2px 6px; margin: -2px -6px;
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+  .agenda-meta { font-size: 11px; color: var(--subtle); font-variant-numeric: tabular-nums; }
+  .agenda-actions { display: none; gap: 2px; }
+  .agenda-item:hover .agenda-actions { display: flex; }
+  .mini-btn {
+    width: 26px; height: 26px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--subtle);
+    transition: background var(--t), color var(--t);
+  }
+  .mini-btn:hover { background: var(--surface); color: var(--text); }
+  .mini-btn.danger:hover { color: var(--danger); }
+
+  .add-agenda { padding: 8px 12px 16px; }
+  .add-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    transition: border-color var(--t), background var(--t);
+  }
+  .add-input:focus { border-color: var(--accent); }
+
+  .sidebar-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; font-size: 12px; color: var(--muted);
+  }
+  .footer-actions { display: flex; gap: 2px; }
+
+  .main {
+    display: flex; flex-direction: column;
+    min-width: 0; overflow: hidden; position: relative;
+  }
+  .topbar {
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .crumb {
+    font-size: 12px; color: var(--subtle);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 6px; }
+
+  .timer {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px 6px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .timer-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--subtle); font-weight: 600; padding-right: 2px;
+  }
+  .timer-display {
+    font-variant-numeric: tabular-nums; font-weight: 500;
+    letter-spacing: 0.02em; min-width: 64px; text-align: center;
+  }
+  .topic-box {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .topic-box-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--subtle); font-weight: 600;
+  }
+  .timer.over .timer-display { color: var(--danger); }
+  .timer-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface-2); color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background var(--t), transform var(--t);
+  }
+  .timer-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .timer-btn:active { transform: scale(0.92); }
+  .limit-input {
+    width: 46px; text-align: center;
+    background: var(--surface-2); border-radius: 6px;
+    padding: 4px 6px; font-size: 12px; color: var(--muted);
+  }
+
+  .focus {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 8vw; overflow-y: auto; position: relative;
+  }
+  .focus-inner {
+    max-width: 880px; width: 100%; text-align: center;
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+  .focus-inner.swap { opacity: 0; transform: translateY(8px); }
+  .focus-eyebrow {
+    font-size: 12px; color: var(--subtle);
+    text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 22px;
+  }
+  .focus-title {
+    font-size: clamp(34px, 6vw, 64px);
+    line-height: 1.1; font-weight: 600;
+    letter-spacing: -0.02em; margin: 0 0 18px; outline: none;
+  }
+  .focus-title[contenteditable="true"]:empty::before {
+    content: attr(data-placeholder); color: var(--subtle);
+  }
+  .focus-sub { color: var(--muted); font-size: 16px; max-width: 560px; margin: 0 auto; }
+  .empty { color: var(--subtle); text-align: center; max-width: 420px; }
+  .empty h2 { font-weight: 500; color: var(--text); margin: 0 0 8px; }
+
+  /* Notes preview card on the focus view */
+  .notes-preview {
+    margin: 32px auto 0;
+    max-width: 680px;
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 20px 24px;
+    cursor: pointer;
+    transition: background var(--t), border-color var(--t), box-shadow var(--t), transform var(--t);
+    box-shadow: none;
+    position: relative;
+  }
+  .notes-preview:hover {
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+    background: var(--surface);
+  }
+  .notes-preview:active { transform: translateY(1px); }
+  .notes-preview-label {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--subtle); font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 12px;
+  }
+  .notes-preview-label .open-hint {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--accent); opacity: 0; transition: opacity var(--t);
+    text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12px;
+  }
+  .notes-preview:hover .open-hint { opacity: 1; }
+  .notes-preview-text {
+    font-size: 15px; line-height: 1.62; color: var(--text);
+    white-space: pre-wrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-wrap: break-word;
+  }
+  .notes-preview-text.is-empty {
+    color: var(--subtle); font-style: italic;
+  }
+
+  /* Hide keyboard hints on touch / coarse-pointer devices where they're irrelevant */
+  @media (hover: none), (pointer: coarse) {
+    .focus-sub kbd { display: none; }
+  }
+
+  .dock { display: flex; gap: 10px; justify-content: center; padding: 12px 24px 24px; flex-wrap: wrap; }
+  .dock-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-size: 13px;
+    transition: background var(--t), transform var(--t), border-color var(--t);
+    box-shadow: var(--shadow-sm);
+  }
+  .dock-btn:hover { background: var(--surface-2); border-color: var(--accent); }
+  .dock-btn:active { transform: translateY(1px); }
+  .dock-btn .badge {
+    background: var(--accent-soft); color: var(--accent);
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .dock-btn .badge.zero { display: none; }
+  .dock-btn.export {
+    background: var(--accent); color: white; border-color: var(--accent);
+  }
+  .dock-btn.export:hover { opacity: 0.92; background: var(--accent); }
+
+  .scrim {
+    position: absolute; inset: 0;
+    background: rgba(10,10,15,0.18); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--t); z-index: 5;
+  }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .panel {
+    position: absolute; top: 0; bottom: 0; right: 0;
+    width: min(620px, 96%);
+    background: var(--surface); border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(100%);
+    transition: transform 260ms cubic-bezier(.2,.7,.2,1);
+    z-index: 10;
+    display: flex; flex-direction: column;
+  }
+  .panel.show { transform: translateX(0); }
+  /* Combined "workspace" panel — Notes + Actions side by side */
+  .panel.work-panel {
+    width: min(1100px, 96%);
+    transition: transform 260ms cubic-bezier(.2,.7,.2,1), width 320ms cubic-bezier(.2,.7,.2,1);
+  }
+  .panel.work-panel.notes-collapsed {
+    width: min(560px, 96%);
+  }
+  .panel-header {
+    padding: 16px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-title { font-weight: 600; letter-spacing: -0.01em; }
+  .panel-title small {
+    display: block; font-weight: 400; color: var(--subtle);
+    font-size: 12px; margin-top: 2px;
+  }
+  .panel-body { flex: 1; overflow-y: auto; padding: 20px 22px; }
+  .panel-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .panel-footer .footer-buttons { display: flex; gap: 6px; }
+
+  /* Split column layout for the combined panel */
+  .panel-split {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .panel-col {
+    display: flex; flex-direction: column;
+    min-width: 0; min-height: 0;
+    overflow: hidden;
+    background: var(--surface);
+    transition: background var(--t);
+    position: relative;
+  }
+  .panel-col + .panel-col { border-left: 1px solid var(--border); }
+  .panel-col.focused {
+    background: var(--surface);
+  }
+  .panel-col.focused::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px; background: var(--accent);
+    z-index: 2;
+  }
+  .panel-col-header {
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .panel-col-title {
+    font-weight: 600; font-size: 14px; letter-spacing: -0.005em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-col-title .col-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--accent-soft); color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .panel-col-meta { font-size: 11px; color: var(--subtle); }
+  .panel-col-body {
+    flex: 1; overflow-y: auto;
+    padding: 16px 18px;
+    min-height: 0;
+  }
+  .panel-col-footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+  .ghost-btn {
+    padding: 8px 14px; border-radius: 8px;
+    color: var(--muted); font-size: 13px;
+    transition: background var(--t), color var(--t);
+  }
+  .ghost-btn:hover { background: var(--surface-2); color: var(--text); }
+  .primary-btn {
+    padding: 8px 14px; border-radius: 8px;
+    background: var(--accent); color: white;
+    font-size: 13px; font-weight: 500;
+    transition: opacity var(--t), transform var(--t);
+  }
+  .primary-btn:hover { opacity: 0.92; }
+  .primary-btn:active { transform: translateY(1px); }
+  .outline-btn {
+    padding: 8px 14px; border-radius: 8px;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+    font-size: 13px; font-weight: 500;
+    transition: background var(--t), border-color var(--t);
+  }
+  .outline-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .notes-area {
+    flex: 1; width: 100%; min-height: 0;
+    resize: none; line-height: 1.6; font-size: 15px; color: var(--text);
+    background: transparent; border: none; outline: none;
+  }
+  .save-status {
+    font-size: 12px; color: var(--subtle);
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: color var(--t);
+  }
+  .save-status::before {
+    content: '';
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+    opacity: 0; transform: scale(0.6);
+    transition: opacity var(--t), transform var(--t);
+  }
+  .save-status.is-saved { color: var(--success); }
+  .save-status.is-saved::before { opacity: 1; transform: scale(1); }
+  .save-status.is-saving { color: var(--muted); }
+  .save-status.is-saving::before {
+    opacity: 1; transform: scale(1);
+    background: var(--warn);
+    animation: savePulse 900ms ease-in-out infinite;
+  }
+  @keyframes savePulse { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+  /* Sliding notes column panes (topic ↔ task) */
+  .notes-col-body {
+    padding: 0 !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .notes-pane {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 14px 18px 16px;
+    background: var(--surface);
+    transition: transform 320ms cubic-bezier(.2,.7,.2,1), opacity 220ms ease;
+    will-change: transform;
+  }
+  .notes-pane-topic { transform: translateX(0); }
+  .notes-pane-task  { transform: translateX(100%); opacity: 0; pointer-events: none; }
+  .notes-col-body.task-active .notes-pane-topic { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+  .notes-col-body.task-active .notes-pane-task  { transform: translateX(0); opacity: 1; pointer-events: auto; }
+
+  .notes-pane-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .notes-pane-eyebrow {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--subtle); font-weight: 600;
+  }
+  .notes-pane-target {
+    font-size: 12px; color: var(--accent); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    min-width: 0;
+    max-width: 60%;
+    text-align: right;
+  }
+  .notes-back-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 600;
+    padding: 4px 8px; margin-left: -6px;
+    border-radius: 6px;
+    transition: background var(--t), color var(--t);
+  }
+  .notes-back-btn:hover { background: var(--surface-2); color: var(--accent); }
+
+  /* Shortcuts help modal */
+  .shortcuts-grid {
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 12px 18px;
+    margin: 6px 0 4px;
+    font-size: 14px;
+    align-items: center;
+  }
+  .shortcuts-grid > div:nth-child(odd) {
+    text-align: right;
+    color: var(--muted);
+    display: flex; gap: 4px; justify-content: flex-end;
+  }
+  kbd {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 2px 7px;
+    color: var(--text);
+    font-weight: 500;
+    min-width: 18px; text-align: center;
+  }
+
+  /* Duration chip on home list */
+  .meeting-row-meta .chip.dur {
+    color: var(--accent);
+  }
+
+  .action-form {
+    display: grid; grid-template-columns: 1fr;
+    gap: 8px; padding: 12px;
+    background: var(--surface-2); border-radius: var(--radius-sm);
+    margin-bottom: 18px;
+  }
+  .action-form input {
+    padding: 8px 10px; background: var(--surface);
+    border-radius: 8px; border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .action-form input:focus { border-color: var(--accent); }
+  .action-form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+
+  .action-list { display: flex; flex-direction: column; gap: 8px; }
+  .action-card {
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    transition: background var(--t), box-shadow var(--t);
+    overflow: hidden;
+    border: 1px solid transparent;
+  }
+  .action-card:hover { background: var(--accent-soft); }
+  .action-card.expanded {
+    background: var(--surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .action-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px; cursor: pointer;
+  }
+  .action-check {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1.5px solid var(--subtle);
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all var(--t);
+    background: transparent;
+  }
+  .action-card.status-done .action-check {
+    background: var(--success); border-color: var(--success); color: white;
+  }
+  .action-card.status-abandoned .action-check {
+    background: var(--abandoned); border-color: var(--abandoned); color: white;
+  }
+  .action-card.status-done .action-name { text-decoration: line-through; color: var(--muted); }
+  .action-card.status-abandoned .action-name {
+    text-decoration: line-through; color: var(--subtle); opacity: 0.7;
+  }
+  .action-body { flex: 1; min-width: 0; }
+  .action-name {
+    font-weight: 500; word-wrap: break-word;
+    font-size: 16px; line-height: 1.35;
+    letter-spacing: -0.005em;
+  }
+  .action-meta {
+    font-size: 12px; color: var(--muted);
+    margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  }
+  .action-meta .agenda-tag { color: var(--accent); }
+  .meta-chip { display: inline-flex; align-items: center; gap: 4px; }
+  .status-pill {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  .status-pill.ongoing  { background: var(--warn-soft);     color: var(--warn);   border-color: var(--warn-soft); }
+  .status-pill.done     { background: var(--success-soft);  color: var(--success);border-color: var(--success-soft); }
+  .status-pill.abandoned{ background: var(--abandoned-soft);color: var(--abandoned); border-color: var(--border); }
+  .link-count, .note-dot {
+    display: inline-flex; align-items: center; gap: 3px;
+    color: var(--subtle); font-size: 12px;
+  }
+  .link-count svg, .note-dot svg { opacity: 0.7; }
+  .chevron { color: var(--subtle); transition: transform var(--t); flex-shrink: 0; }
+  .action-card.expanded .chevron { transform: rotate(180deg); }
+  .delete-btn {
+    color: var(--subtle); padding: 4px; border-radius: 6px;
+    transition: color var(--t), background var(--t);
+  }
+  .delete-btn:hover { color: var(--danger); background: var(--surface-2); }
+
+  .action-expand {
+    padding: 0 12px 12px;
+    display: flex; flex-direction: column; gap: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  .field-label {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--subtle);
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .task-notes {
+    width: 100%; min-height: 70px; resize: vertical;
+    padding: 10px 12px;
+    background: var(--surface-2); border-radius: 8px;
+    border: 1px solid var(--border);
+    line-height: 1.5; font-size: 13px;
+    color: var(--text);
+    transition: border-color var(--t);
+  }
+  .task-notes:focus { border-color: var(--accent); background: var(--surface); }
+  .status-select {
+    padding: 4px 8px; border-radius: 6px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    cursor: pointer; color: var(--text);
+    transition: border-color var(--t);
+  }
+  .status-select:focus { border-color: var(--accent); }
+  .links-list { display: flex; flex-direction: column; gap: 6px; }
+  .link-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: background var(--t), border-color var(--t);
+  }
+  .link-row:hover { border-color: var(--accent); }
+  .link-icon { color: var(--accent); flex-shrink: 0; display: inline-flex; }
+  .link-text { flex: 1; min-width: 0; overflow: hidden; }
+  .link-label {
+    font-size: 13px; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .link-url {
+    font-size: 11px; color: var(--subtle);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .link-row a.link-text { text-decoration: none; cursor: pointer; }
+  .link-row a.link-text:hover .link-label { color: var(--accent); }
+  .link-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .link-form {
+    display: grid; gap: 6px;
+    grid-template-columns: 1fr 1fr auto;
+    margin-top: 6px;
+  }
+  .link-form input {
+    padding: 7px 10px;
+    background: var(--surface-2); border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .link-form input:focus { border-color: var(--accent); }
+  .link-form button {
+    padding: 7px 12px;
+    background: var(--accent); color: white;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    transition: opacity var(--t);
+  }
+  .link-form button:hover { opacity: 0.92; }
+  .link-hint { font-size: 11px; color: var(--subtle); margin-top: 4px; line-height: 1.4; }
+  .status-tabs {
+    display: flex; gap: 4px;
+    margin-bottom: 12px;
+    background: var(--surface-2);
+    padding: 3px; border-radius: 8px;
+  }
+  .status-tab {
+    flex: 1; padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px; font-weight: 500;
+    color: var(--muted);
+    text-align: center;
+    transition: all var(--t);
+  }
+  .status-tab:hover { color: var(--text); }
+  .status-tab.active {
+    background: var(--surface); color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+  .status-tab .count { margin-left: 5px; font-size: 10px; color: var(--subtle); }
+  .status-tab.active .count { color: var(--accent); }
+  .empty-list {
+    text-align: center; color: var(--subtle);
+    padding: 30px 10px; font-size: 13px;
+  }
+  .topic-header {
+    padding: 10px 12px;
+    background: var(--accent-soft);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--accent); font-weight: 500;
+  }
+
+  /* Export menu */
+  .export-menu {
+    position: absolute;
+    bottom: 84px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+    min-width: 220px;
+    z-index: 30;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--t), transform var(--t);
+  }
+  .export-menu.show {
+    opacity: 1; pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+  .export-menu button {
+    width: 100%; text-align: left;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text);
+    transition: background var(--t);
+  }
+  .export-menu button:hover { background: var(--surface-2); }
+  .export-menu .menu-meta {
+    font-size: 11px; color: var(--subtle);
+    padding: 6px 12px 2px;
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .export-menu .menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
+
+  /* ===================== HOME REFINEMENT + INTRO ===================== */
+  .home {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+  .home-wrap {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 600px);
+    max-width: 600px;
+    margin: 0;
+    padding: 28px 26px 26px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+    transition: transform 320ms cubic-bezier(.2,.7,.2,1), opacity 260ms ease, filter 320ms ease;
+  }
+  .home.intro-active .home-wrap {
+    transform: translateY(14px) scale(0.965);
+    opacity: 0.22;
+    filter: blur(14px);
+    pointer-events: none;
+  }
+  .home-top {
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .home-brand {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .home-heading {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
+  .home-sub {
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--subtle);
+    max-width: 460px;
+  }
+  .new-meeting-btn {
+    margin-bottom: 28px;
+    padding: 10px 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .meeting-group {
+    margin-bottom: 22px;
+  }
+  .meeting-group:last-child {
+    margin-bottom: 0;
+  }
+  .meeting-group-label {
+    margin: 0 2px 12px;
+    font-size: 10px;
+  }
+  .meeting-list {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    gap: 10px;
+  }
+  .meeting-row {
+    padding: 16px 17px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .meeting-row:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .meeting-row:hover {
+    background: var(--surface-2);
+    box-shadow: var(--shadow-sm);
+  }
+  .meeting-row-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .meeting-row-meta {
+    font-size: 11px;
+    color: var(--subtle);
+    margin-top: 5px;
+  }
+  .meeting-row-actions {
+    opacity: 0.35;
+  }
+  .meeting-row:hover .meeting-row-actions {
+    opacity: 1;
+  }
+
+  .home-intro {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: rgba(250,250,250,0.74);
+    backdrop-filter: blur(14px);
+    transition: opacity 360ms ease, visibility 360ms ease;
+  }
+  [data-theme="dark"] .home-intro {
+    background: rgba(14,14,16,0.78);
+  }
+  .home-intro.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .intro-hero {
+    max-width: 760px;
+    text-align: center;
+    padding: 12px;
+  }
+  @keyframes titleReveal {
+    0% { opacity: 0; transform: translateY(12px) scale(0.98); letter-spacing: -0.02em; filter: blur(10px); }
+    100% { opacity: 1; transform: none; letter-spacing: -0.05em; filter: blur(0); }
+  }
+  .intro-title {
+    margin: 0;
+    font-size: clamp(46px, 9vw, 76px);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+    font-family: sans-serif;
+    font-weight: bold;
+    color: #36454F; /* Charcoal */
+    opacity: 0;
+    animation: titleReveal 0.8s forwards cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  [data-theme="dark"] .intro-title {
+    color: #f5f5f7;
+  }
+  .intro-tagline {
+    margin: 16px 0 10px;
+    font-size: clamp(18px, 2.6vw, 24px);
+    letter-spacing: -0.025em;
+    color: var(--text);
+    font-weight: 500;
+    opacity: 0;
+    animation: fadeIn 0.8s 0.2s forwards cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .intro-copy {
+    max-width: 700px;
+    margin: 0 auto 24px;
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--muted);
+    opacity: 0;
+    animation: fadeIn 0.8s 0.4s forwards cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Notes pane collapses away unless explicitly in Notes mode or a task is selected */
+  #workPanel .panel-split {
+    transition: grid-template-columns 320ms cubic-bezier(.2,.7,.2,1);
+  }
+  #colNotes,
+  #colActions {
+    transition: opacity 260ms ease, transform 320ms cubic-bezier(.2,.7,.2,1), border-color var(--t);
+  }
+  #workPanel.notes-collapsed .panel-split {
+    grid-template-columns: 0fr 1fr;
+  }
+  #workPanel.notes-collapsed #colNotes {
+    opacity: 0;
+    transform: translateX(-24px);
+    pointer-events: none;
+    overflow: hidden;
+  }
+  #workPanel.notes-collapsed #colActions {
+    border-left: none;
+  }
+
+  @media (max-width: 820px) {
+    .home {
+      padding: 24px 16px;
+      align-items: flex-start;
+    }
+    .home-wrap {
+      width: min(100%, 560px);
+      padding: 22px 18px 18px;
+      border-radius: 16px;
+    }
+    .home-heading {
+      font-size: 24px;
+    }
+    .intro-copy {
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    .intro-enter {
+      width: 100%;
+      max-width: 260px;
+    }
+    .modal-card { grid-template-columns: 1fr; max-width: 460px; }
+    .modal-right { border-left: none; border-top: 1px solid var(--border); }
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: absolute; top: 0; bottom: 0; left: 0;
+      width: 300px; z-index: 20;
+      transform: translateX(-100%);
+      transition: transform var(--t);
+    }
+    .sidebar.show { transform: translateX(0); box-shadow: var(--shadow-lg); }
+    .mobile-only { display: inline-flex !important; }
+    .action-form-row { grid-template-columns: 1fr 1fr; }
+    .action-form-row .primary-btn { grid-column: 1 / -1; }
+
+    /* Full-width work panel; stack Notes over Actions instead of cramped columns */
+    .panel.work-panel,
+    .panel.work-panel.notes-collapsed { width: 100%; }
+    .panel-split { grid-template-columns: 1fr; grid-auto-rows: minmax(0, 1fr); overflow-y: auto; }
+    .panel-col + .panel-col { border-left: none; border-top: 1px solid var(--border); }
+    #workPanel.notes-collapsed .panel-split { grid-template-columns: 1fr; }
+    /* Dock pills can wrap a little tighter on phones */
+    .dock { gap: 8px; padding: 10px 12px 18px; }
+    .dock-btn { padding: 9px 13px; font-size: 12px; }
+  }
+  .mobile-only { display: none; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--subtle); }
+
+  /* ===================== PRINT (PDF) ===================== */
+  #printRoot { display: none; }
+  @media print {
+    @page { margin: 0.7in; }
+    html, body { background: white !important; color: #111 !important; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .home, .app, .modal-scrim { display: none !important; }
+    #printRoot {
+      display: block !important;
+      max-width: 100%;
+      font-family: var(--font);
+      color: #111;
+    }
+    .pr-doc {
+      width: 100%;
+    }
+    .pr-cover {
+      page-break-after: always;
+      padding: 0;
+    }
+    .pr-brand {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #6b7280;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .pr-cover-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .pr-cover-title-wrap { max-width: 72%; }
+    .pr-cover h1 {
+      font-size: 34px;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin: 0 0 10px;
+    }
+    .pr-date {
+      color: #4b5563;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .pr-lead {
+      color: #4b5563;
+      font-size: 14px;
+      line-height: 1.65;
+      max-width: 62ch;
+      margin: 0;
+    }
+    .pr-cover-status {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #374151;
+      white-space: nowrap;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+    .pr-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 22px 0 16px;
+    }
+    .pr-meta-card, .pr-stat {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #fafafa;
+      page-break-inside: avoid;
+    }
+    .pr-meta-k, .pr-stat .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .pr-meta-v {
+      font-size: 14px;
+      color: #111827;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    .pr-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0 26px;
+    }
+    .pr-stat .num {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #111827;
+    }
+    .pr-toc {
+      margin-top: 10px;
+      padding-top: 18px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .pr-toc h3 {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      font-weight: 700;
+      margin: 0 0 10px;
+    }
+    .pr-toc ol {
+      margin: 0;
+      padding-left: 20px;
+      color: #1f2937;
+      line-height: 1.75;
+      font-size: 13px;
+    }
+    .pr-topic {
+      page-break-inside: avoid;
+      margin-bottom: 28px;
+      padding-top: 4px;
+    }
+    .pr-topic + .pr-topic {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 20px;
+    }
+    .pr-topic-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .pr-topic-meta {
+      font-size: 10px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .pr-topic h2 {
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: #111827;
+    }
+    .pr-limit {
+      font-size: 10px;
+      color: #374151;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 999px;
+      padding: 6px 10px;
+      white-space: nowrap;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .pr-section {
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+    }
+    .pr-section-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .pr-notes {
+      white-space: pre-wrap;
+      line-height: 1.62;
+      font-size: 13px;
+      padding: 12px 14px;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-left: 4px solid #111827;
+      border-radius: 10px;
+      color: #1f2937;
+    }
+    .pr-task-list {
+      display: block;
+    }
+    .pr-task {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+      background: white;
+    }
+    .pr-task-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .pr-task-name {
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #111827;
+    }
+    .pr-task-name.done { text-decoration: line-through; color: #6b7280; }
+    .pr-task-name.abandoned { text-decoration: line-through; color: #9ca3af; }
+    .pr-status {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .pr-status.ongoing { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
+    .pr-status.done { color: #15803d; border-color: #86efac; background: #ecfdf5; }
+    .pr-status.abandoned { color: #4b5563; border-color: #d1d5db; background: #f3f4f6; }
+    .pr-task-meta {
+      font-size: 11px;
+      color: #4b5563;
+      margin-top: 6px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      line-height: 1.5;
+    }
+    .pr-task-notes {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #e5e7eb;
+      font-size: 12px;
+      white-space: pre-wrap;
+      line-height: 1.58;
+      color: #1f2937;
+    }
+    .pr-links {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #e5e7eb;
+    }
+    .pr-link {
+      font-size: 11px;
+      color: #374151;
+      display: block;
+      margin-top: 4px;
+      word-break: break-word;
+      text-decoration: none;
+      line-height: 1.5;
+    }
+    .pr-link .pr-link-label {
+      font-weight: 700;
+      color: #111827;
+      margin-right: 4px;
+    }
+    .pr-empty {
+      padding: 12px 14px;
+      border: 1px dashed #d1d5db;
+      border-radius: 10px;
+      color: #6b7280;
+      font-size: 12px;
+      background: #fafafa;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== HOME / LAUNCH SCREEN ===================== -->
+<div class="home intro-active" id="homeScreen">
+  <div class="home-intro" id="introSplash">
+    <div class="intro-hero">
+      <h1 class="intro-title">Clarify</h1>
+      <p class="intro-tagline">Where meetings find focus.</p>
+      <p class="intro-copy">To help users plan, guide, and conclude conversations with clarity through beautifully structured, effortlessly calm workflows.</p>
+    </div>
+  </div>
+
+  <div class="home-wrap">
+    <div class="home-top">
+      <div class="home-brand"><span class="brand-dot"></span> Clarify</div>
+      <div class="home-actions">
+        <button class="icon-btn theme-toggle" id="themeBtnHome" title="Toggle theme" aria-label="Toggle dark mode" aria-pressed="false">
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <h1 class="home-heading" id="homeHeading">Your Meetings</h1>
+    <p class="home-sub" id="homeSub">Pick one to open or start a new one.</p>
+
+    <button class="new-meeting-btn" id="openNewMeeting">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New meeting
+    </button>
+
+    <div id="meetingGroups"></div>
+  </div>
+</div>
+
+<!-- Keyboard shortcuts modal -->
+<div class="modal-scrim" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsHeading">
+  <div class="modal-card" style="grid-template-columns:1fr; max-width:480px;">
+    <div class="modal-left" style="padding:28px 30px 24px;">
+      <div class="modal-eyebrow">Keyboard shortcuts</div>
+      <h2 class="modal-heading" id="shortcutsHeading" style="margin-bottom:8px;">Move faster</h2>
+      <div class="shortcuts-grid">
+        <div><kbd>←</kbd> <kbd>→</kbd></div><div>Previous / next topic</div>
+
+        <div><kbd>A</kbd></div><div>Open Action Items</div>
+        <div><kbd>Space</kbd></div><div>Pause / resume meeting timer</div>
+        <div><kbd>Esc</kbd></div><div>Close panel · back to summary</div>
+        <div><kbd>?</kbd></div><div>Show this help</div>
+      </div>
+      <div class="modal-actions">
+        <button class="primary-btn" data-close>Got it</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New-meeting modal -->
+<div class="modal-scrim" id="newMeetingModal" role="dialog" aria-modal="true" aria-labelledby="newMeetingHeading">
+  <div class="modal-card">
+    <div class="modal-left">
+      <div class="modal-eyebrow">New meeting</div>
+      <h2 class="modal-heading" id="newMeetingHeading">What are we meeting about?</h2>
+      <div class="field">
+        <label class="field-label-sm" for="meetingTitleInput">Title</label>
+        <input id="meetingTitleInput" class="modal-input" placeholder="e.g. Weekly product review" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="field-label-sm">Date</label>
+        <div class="selected-date" id="selectedDateText">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="selectedDateLabel">Today</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost-btn" id="cancelNewMeeting">Cancel</button>
+        <button class="primary-btn" id="createMeetingBtn">Create meeting</button>
+      </div>
+    </div>
+    <div class="modal-right">
+      <div class="cal-header">
+        <div class="cal-month" id="calMonth">Month YYYY</div>
+        <div class="cal-nav">
+          <button id="calPrev" title="Previous month" aria-label="Previous month">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button id="calToday" title="Today" style="font-size:11px;font-weight:600;color:var(--muted);width:auto;padding:0 8px;">Today</button>
+          <button id="calNext" title="Next month" aria-label="Next month">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== WORKSPACE ===================== -->
+<div class="app" id="app" style="display:none;">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="meeting-meta-row">
+        <button class="back-link" id="backHome" title="All meetings">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          All meetings
+        </button>
+        <button class="icon-btn mobile-only" id="closeSidebar" title="Close" aria-label="Close sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="meeting-title" id="meetingTitleDisplay" contenteditable="true" spellcheck="false"
+           data-placeholder="Untitled meeting"></div>
+      <div class="meeting-date" id="meetingDateDisplay"></div>
+    </div>
+
+    <div class="section-label">
+      <span>Agenda</span>
+      <span class="section-count" id="meetingMeta">0</span>
+    </div>
+    <div class="agenda-list" id="agendaList"></div>
+    <div class="add-agenda">
+      <input id="newItemInput" class="add-input" placeholder="+ Add agenda item" />
+    </div>
+    <div class="sidebar-footer">
+      <button class="ghost-btn" id="endMeetingBtn" style="padding:6px 10px;font-size:12px;">Mark as done ✓</button>
+      <div class="footer-actions">
+        <button class="icon-btn theme-toggle" id="themeBtn" title="Toggle theme" aria-label="Toggle dark mode" aria-pressed="false">
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="icon-btn mobile-only" id="openSidebar" title="Menu" aria-label="Open menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div class="crumb" id="crumb">Meeting</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="timer" id="timer" title="Total time spent in this meeting">
+          <span class="timer-label" aria-hidden="true">Meeting</span>
+          <button class="timer-btn" id="timerToggle" title="Pause / resume meeting session (Space)" aria-label="Pause or resume meeting timer">
+            <svg id="playIcon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="pauseIcon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:none" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          </button>
+          <div class="timer-display" id="timerDisplay" role="timer" aria-label="Total meeting time elapsed">00:00</div>
+          <button class="timer-btn" id="timerReset" title="Reset meeting timer" aria-label="Reset meeting timer">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 10 9 10"/></svg>
+          </button>
+        </div>
+        <label class="topic-box" title="Optional time-box for the current topic (minutes)">
+          <span class="topic-box-label">Topic</span>
+          <input id="limitInput" class="limit-input" placeholder="min" type="number" min="0" aria-label="Time-box for current topic in minutes" />
+        </label>
+        <button class="icon-btn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </button>
+        <button class="icon-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Toggle fullscreen">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <section class="focus" id="focusView">
+      <div class="focus-inner" id="focusInner">
+        <div class="empty">
+          <h2>Ready when you are.</h2>
+          <p>Add agenda items on the left to begin. Click one to bring it into focus.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="dock">
+      <button class="dock-btn" id="openActions" title="Action Items — press A">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Action Items
+        <span class="badge zero" id="actionBadge">0</span>
+      </button>
+      <button class="dock-btn" id="prevBtn" title="Previous (←)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Prev
+      </button>
+      <button class="dock-btn" id="nextBtn" title="Next (→)">
+        Next
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="dock-btn export" id="exportBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+    </div>
+
+    <div class="export-menu" id="exportMenu">
+      <div class="menu-meta">Export meeting</div>
+      <button data-export="pdf">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        PDF (via Print)
+      </button>
+      <button data-export="md">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+        Markdown (.md)
+      </button>
+      <div class="menu-sep"></div>
+      <div class="menu-meta">Just tasks</div>
+      <button data-export="csv">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+        Action items (CSV)
+      </button>
+    </div>
+
+    <div class="scrim" id="scrim"></div>
+
+    <!-- Combined work panel: Notes + Action Items side by side -->
+    <aside class="panel work-panel" id="workPanel">
+      <div class="panel-header">
+        <div class="panel-title">
+          Workspace
+          <small id="workSubtitle">General summary &amp; action items</small>
+        </div>
+        <button class="icon-btn" data-close title="Close (Esc)" aria-label="Close panel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="panel-split" id="panelSplit">
+        <!-- Notes column (two sliding panes: topic notes ↔ selected task notes) -->
+        <section class="panel-col" id="colNotes" data-col="notes">
+          <div class="panel-col-header">
+            <div class="panel-col-title">
+              <span class="col-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </span>
+              Summary & Notes
+            </div>
+            <div class="panel-col-meta" id="notesColMeta">Per‑topic</div>
+          </div>
+          <div class="panel-col-body notes-col-body" id="notesColBody">
+            <!-- Summary pane -->
+            <div class="notes-pane notes-pane-topic">
+              <div class="notes-pane-header">
+                <div class="notes-pane-eyebrow">General Summary</div>
+                <div class="notes-pane-target" id="topicNotesTarget"></div>
+              </div>
+              <textarea id="notesArea" class="notes-area" placeholder="Capture thoughts, decisions, and key points for this topic…"></textarea>
+            </div>
+            <!-- Task notes pane (slides in when a task is selected) -->
+            <div class="notes-pane notes-pane-task">
+              <div class="notes-pane-header">
+                <button class="notes-back-btn" id="notesBackBtn" title="Back to topic notes (Esc)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                  Topic notes
+                </button>
+                <div class="notes-pane-target" id="taskNotesTarget"></div>
+              </div>
+              <textarea id="taskNotesArea" class="notes-area" placeholder="Notes for this action item…"></textarea>
+            </div>
+          </div>
+          <div class="panel-col-footer">
+            <span class="save-status is-saved" id="saveStatus" role="status" aria-live="polite">Saved</span>
+            <button class="ghost-btn" id="exportNotesBtn" style="padding:6px 10px;font-size:12px;">Export topic</button>
+          </div>
+        </section>
+
+        <!-- Actions column -->
+        <section class="panel-col" id="colActions" data-col="actions">
+          <div class="panel-col-header">
+            <div class="panel-col-title">
+              <span class="col-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </span>
+              Action Items
+            </div>
+            <div class="panel-col-meta" id="actionsColMeta">Topic only</div>
+          </div>
+          <div class="panel-col-body">
+            <div id="topicHeader"></div>
+            <div class="action-form">
+              <input id="taskName" placeholder="Task description" />
+              <div class="action-form-row">
+                <input id="taskOwner" placeholder="Owner" />
+                <input id="taskDate" type="date" />
+                <button class="primary-btn" id="addTaskBtn">Add</button>
+              </div>
+            </div>
+            <div class="section-label" style="padding:0 0 8px;">
+              <span>Tasks for this topic</span>
+              <span class="section-count" id="localCount">0</span>
+            </div>
+            <div class="action-list" id="actionListLocal"></div>
+          </div>
+          <div class="panel-col-footer">
+            <span class="save-status" id="taskCount">0 in this topic</span>
+            <button class="ghost-btn" id="exportTasksBtn" style="padding:6px 10px;font-size:12px;">Export CSV</button>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div id="printRoot"></div>
+
+<script>
+/* ============================= STATE / STORAGE ============================ */
+const STORAGE_KEY = 'facilitate.v4';
+const LEGACY_KEYS = ['facilitate.v3','facilitate.v2','facilitate.v1'];
+const STATUSES = ['ongoing','done','abandoned'];     // task statuses
+const M_STATUSES = ['ongoing','scheduled','done'];   // meeting statuses
+
+const todayISO = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+const newMeeting = (title='', date=todayISO()) => ({
+  id: uid(),
+  title: title || 'Untitled meeting',
+  date,
+  status: 'scheduled',
+  createdAt: new Date().toISOString(),
+  lastOpenedAt: null,
+  items: [],
+  tasks: [],
+  activeId: null,
+  expandedTasks: {},
+  statusFilter: 'all',
+  selectedTaskId: null,
+  // Session timing
+  durationSec: 0,             // accumulated duration across all sessions (seconds)
+  sessionStartedAt: null,     // ISO timestamp when current session started (null if not running)
+  endedAt: null,              // ISO timestamp when meeting was marked done
+});
+
+const defaultState = () => ({
+  meetings: [],
+  currentId: null,
+  theme: 'light',
+  });
+
+let state = load();
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const s = Object.assign(defaultState(), parsed);
+      s.meetings = (s.meetings || []).map(normalizeMeeting);
+      return s;
+    }
+    // Migrate from v3 (single meeting) / v1-v2 (no meeting wrapper)
+    for (const key of LEGACY_KEYS) {
+      const legacy = localStorage.getItem(key);
+      if (!legacy) continue;
+      const v = JSON.parse(legacy);
+      const s = defaultState();
+      const m = newMeeting(v.meeting?.title || '', v.meeting?.date || todayISO());
+      m.items = v.items || [];
+      m.tasks = (v.tasks || []).map(t => ({
+        ...t,
+        status: t.status || (t.done ? 'done' : 'ongoing'),
+        notes: t.notes || '',
+        links: t.links || [],
+      }));
+      m.activeId = v.activeId || null;
+      m.expandedTasks = v.expandedTasks || {};
+      m.statusFilter = v.statusFilter || 'all';
+      m.status = computeAutoStatus(m);
+      s.meetings.push(m);
+      return s;
+    }
+    return defaultState();
+  } catch { return defaultState(); }
+}
+function normalizeMeeting(m) {
+  return {
+    ...newMeeting(),
+    ...m,
+    items: m.items || [],
+    tasks: (m.tasks || []).map(t => ({
+      status: t.status || (t.done ? 'done' : 'ongoing'),
+      notes: t.notes || '', links: t.links || [],
+      ...t,
+      status: t.status || (t.done ? 'done' : 'ongoing'),
+    })),
+    expandedTasks: m.expandedTasks || {},
+    statusFilter: m.statusFilter || 'all',
+    selectedTaskId: m.selectedTaskId || null,
+    durationSec: typeof m.durationSec === 'number' ? m.durationSec : 0,
+    sessionStartedAt: m.sessionStartedAt || null,
+    endedAt: m.endedAt || null,
+    status: M_STATUSES.includes(m.status) ? m.status : 'scheduled',
+  };
+}
+function computeAutoStatus(m) {
+  if (m.status === 'done') return 'done';
+  // if user added content, probably ongoing
+  if (m.items.length || m.tasks.length) return 'ongoing';
+  if (m.date > todayISO()) return 'scheduled';
+  return 'ongoing';
+}
+
+const save = (() => {
+  let t; return () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+    }, 150);
+  };
+})();
+const saveImmediate = () => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+};
+
+function cm() { return state.meetings.find(m => m.id === state.currentId); }
+
+/* ============================== HELPERS ================================== */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+
+/* ---- Modal focus management (a11y) ----
+ * Moves focus into a dialog on open, traps Tab within it, and restores
+ * focus to the previously-focused element on close. */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const _trapState = new WeakMap();
+function trapFocus(container, firstFocusEl) {
+  const opener = document.activeElement;
+  const onKey = (e) => {
+    if (e.key !== 'Tab') return;
+    const items = [...container.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  container.addEventListener('keydown', onKey);
+  _trapState.set(container, { onKey, opener });
+  const target = firstFocusEl || container.querySelector(FOCUSABLE);
+  setTimeout(() => target?.focus(), 60);
+}
+function releaseFocus(container) {
+  const st = _trapState.get(container);
+  if (!st) return;
+  container.removeEventListener('keydown', st.onKey);
+  _trapState.delete(container);
+  st.opener?.focus?.();
+}
+
+function activeItem() { const m = cm(); return m && m.items.find(i => i.id === m.activeId); }
+function escapeHTML(s='') {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s='') { return escapeHTML(s); }
+function formatDateShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00');
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+function formatDateLong(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00');
+  return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+function relDate(iso) {
+  if (!iso) return '';
+  const t = todayISO();
+  if (iso === t) return 'Today';
+  // tomorrow?
+  const tomorrow = (() => { const d = new Date(); d.setDate(d.getDate()+1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+  const yesterday = (() => { const d = new Date(); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+  if (iso === tomorrow) return 'Tomorrow';
+  if (iso === yesterday) return 'Yesterday';
+  return formatDateLong(iso);
+}
+function normalizeHref(raw) {
+  if (!raw) return '';
+  let s = String(raw).trim();
+  if (!s) return '';
+  if (/^[a-z][a-z0-9+\-.]*:/i.test(s)) return s;
+  if (/^\\\\/.test(s)) return 'file://' + s.replace(/\\/g,'/').replace(/^\/\//,'');
+  if (/^[a-zA-Z]:[\\/]/.test(s)) return 'file:///' + s.replace(/\\/g,'/');
+  if (s.startsWith('/')) return 'file://' + s;
+  if (s.startsWith('~/')) return 'file://' + s;
+  if (/^[\w.-]+\.[a-z]{2,}([/?#].*)?$/i.test(s)) return 'https://' + s;
+  return 'file://' + s;
+}
+function isLocalLink(href) { return /^file:/i.test(href); }
+function linkDisplay(href) {
+  if (!href) return '';
+  if (/^file:\/\//i.test(href)) {
+    return href.replace(/^file:\/\/\/?/i, '').replace(/\//g, navigator.platform.indexOf('Win')>-1?'\\':'/');
+  }
+  return href;
+}
+function linkHostname(href) { try { return new URL(href).hostname || ''; } catch { return ''; } }
+
+/* ============================== HOME / LIST ============================== */
+const homeEl  = $('#homeScreen');
+const appEl   = $('#app');
+const groupsEl = $('#meetingGroups');
+const homeHeading = $('#homeHeading');
+const homeSub = $('#homeSub');
+const introSplash = $('#introSplash');
+
+let introDismissed = false;
+let introTimer = null;
+
+function dismissIntro() {
+  if (introDismissed) return;
+  introDismissed = true;
+  homeEl.classList.remove('intro-active');
+  introSplash?.classList.add('hidden');
+}
+
+function meetingRowHTML(m) {
+  const d = new Date(m.date + 'T00:00');
+  const mon = d.toLocaleDateString(undefined, { month: 'short' });
+  const day = d.getDate();
+  const isToday = m.date === todayISO();
+  const taskCount = m.tasks.length;
+  const itemCount = m.items.length;
+  // Compute live duration (in case it's still ticking — should only happen if user navigates away mid-session)
+  let liveDur = m.durationSec || 0;
+  if (m.sessionStartedAt) liveDur += Math.max(0, (Date.now() - new Date(m.sessionStartedAt).getTime())/1000);
+  const showDur = liveDur > 0 && (m.status === 'done' || m.status === 'ongoing');
+  const subParts = [
+    `<span class="chip">${escapeHTML(relDate(m.date))}</span>`,
+    itemCount ? `<span class="chip">${itemCount} topic${itemCount===1?'':'s'}</span>` : '',
+    taskCount ? `<span class="chip">${taskCount} task${taskCount===1?'':'s'}</span>` : '',
+    showDur ? `<span class="chip dur" title="${m.status==='done'?'Total meeting duration':'Time spent so far'}">⏱ ${fmtDurationHuman(liveDur)}</span>` : '',
+  ].filter(Boolean).join('');
+
+  return `
+    <div class="meeting-row ${isToday?'is-today':''}" data-id="${m.id}" role="button" tabindex="0" aria-label="Open meeting: ${escapeAttr(m.title || 'Untitled meeting')}, ${escapeAttr(relDate(m.date))}, ${escapeAttr(m.status)}">
+      <div class="meeting-row-date">
+        <div class="mon">${mon}</div>
+        <div class="day">${day}</div>
+      </div>
+      <div class="meeting-row-body">
+        <div class="meeting-row-title">${escapeHTML(m.title || 'Untitled meeting')}</div>
+        <div class="meeting-row-meta">${subParts}</div>
+      </div>
+      <span class="status-tag ${m.status}">${m.status}</span>
+      <div class="meeting-row-actions">
+        ${m.status === 'done' ? `
+          <button class="mini-btn" data-act="reopen" title="Reopen as ongoing" aria-label="Reopen meeting as ongoing">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 10 9 10"/></svg>
+          </button>` : ''}
+        <button class="mini-btn danger" data-act="delete" title="Delete meeting" aria-label="Delete meeting">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderHome() {
+  const byStatus = { ongoing: [], scheduled: [], done: [] };
+  state.meetings.forEach(m => byStatus[m.status]?.push(m));
+  byStatus.scheduled.sort((a,b) => a.date.localeCompare(b.date));
+  byStatus.ongoing.sort((a,b) => (b.lastOpenedAt||b.createdAt||'').localeCompare(a.lastOpenedAt||a.createdAt||''));
+  byStatus.done.sort((a,b) => b.date.localeCompare(a.date));
+
+  const total = state.meetings.length;
+  homeHeading.textContent = total ? 'Your Meetings' : 'Welcome to Clarify';
+  homeSub.textContent = total ? 'Pick one to open or start a new one.' : 'Create your first meeting to get started.';
+
+  groupsEl.innerHTML = '';
+  if (!total) {
+    groupsEl.innerHTML = `
+      <div class="empty-state">
+        <h3>It’s quiet in here</h3>
+        <p>No meetings found. Start planning your next conversation.</p>
+      </div>`;
+    return;
+  }
+
+  const renderGroup = (label, arr, gClass) => {
+    if (!arr.length) return;
+    const g = document.createElement('div'); g.className = 'meeting-group ' + gClass;
+    g.innerHTML = `<div class="meeting-group-label"><span class="dot"></span>${label}</div>`;
+    const list = document.createElement('div'); list.className = 'meeting-list';
+    arr.forEach(m => {
+      list.innerHTML += meetingRowHTML(m);
+    });
+    g.appendChild(list);
+    groupsEl.appendChild(g);
+  };
+
+  renderGroup('Ongoing', byStatus.ongoing, 'group-ongoing');
+  renderGroup('Scheduled', byStatus.scheduled, 'group-scheduled');
+  renderGroup('Done', byStatus.done, 'group-done');
+}
+
+function showHome() {
+  pauseSession();
+  if (timerInt) { clearInterval(timerInt); timerInt = null; }
+  appEl.style.display = 'none';
+  homeEl.classList.remove('hidden');
+  state.currentId = null;
+  saveImmediate();
+  renderHome();
+}
+function showApp() {
+  homeEl.classList.add('hidden');
+  appEl.style.display = '';
+  renderMeetingHeader();
+  renderAgenda();
+  renderFocus(false);
+  // Auto-start the meeting session timer (unless meeting is already done)
+  const m = cm();
+  if (m && m.status !== 'done') startSession();
+  else updateTimer();
+  if (!timerInt) timerInt = setInterval(updateTimer, 1000);
+}
+
+groupsEl.addEventListener('click', e => {
+  const row = e.target.closest('.meeting-row');
+  if (!row) return;
+  const id = row.dataset.id;
+  const btn = e.target.closest('[data-act]');
+  if (btn) {
+    const act = btn.dataset.act;
+    const m = state.meetings.find(x => x.id === id);
+    if (!m) return;
+    if (act === 'delete') {
+      if (confirm('Delete meeting "'+(m.title||'Untitled')+'"?')) {
+        state.meetings = state.meetings.filter(x => x.id !== id);
+        saveImmediate(); renderHome();
+      }
+    } else if (act === 'reopen') {
+      m.status = 'ongoing'; m.endedAt = null;
+      saveImmediate(); renderHome();
+    }
+    return;
+  }
+  openMeeting(id);
+});
+
+function openMeeting(id) {
+  const m = state.meetings.find(x => x.id === id); if (!m) return;
+  state.currentId = id;
+  m.lastOpenedAt = new Date().toISOString();
+  if (m.status === 'scheduled') m.status = 'ongoing';
+  saveImmediate();
+  showApp();
+}
+
+
+
+/* ========================== NEW MEETING MODAL ============================ */
+const modal = $('#newMeetingModal');
+const calGrid = $('#calGrid');
+const calMonth = $('#calMonth');
+const meetingTitleInput = $('#meetingTitleInput');
+const selectedDateLabel = $('#selectedDateLabel');
+
+let calView = { year: 0, month: 0 };
+let pickedISO = todayISO();
+
+function setPicked(iso) {
+  pickedISO = iso;
+  selectedDateLabel.textContent = (iso === todayISO())
+    ? `Today · ${formatDateLong(iso)}`
+    : formatDateLong(iso);
+  renderCal();
+}
+function renderCal() {
+  const monthName = new Date(calView.year, calView.month, 1)
+    .toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  calMonth.textContent = monthName;
+  calGrid.innerHTML = '';
+  ['S','M','T','W','T','F','S'].forEach(d => {
+    const el = document.createElement('div'); el.className = 'cal-dow'; el.textContent = d;
+    calGrid.appendChild(el);
+  });
+  const first = new Date(calView.year, calView.month, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(calView.year, calView.month+1, 0).getDate();
+  const daysPrev = new Date(calView.year, calView.month, 0).getDate();
+  const totalCells = Math.ceil((startDow + daysInMonth) / 7) * 7;
+  const today = todayISO();
+  for (let i = 0; i < totalCells; i++) {
+    const cell = document.createElement('button'); cell.type = 'button'; cell.className = 'cal-day';
+    let y = calView.year, m = calView.month, d;
+    if (i < startDow) { d = daysPrev - startDow + 1 + i; m = calView.month - 1; if (m < 0) { m = 11; y--; } cell.classList.add('other'); }
+    else if (i >= startDow + daysInMonth) { d = i - startDow - daysInMonth + 1; m = calView.month + 1; if (m > 11) { m = 0; y++; } cell.classList.add('other'); }
+    else d = i - startDow + 1;
+    const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cell.textContent = d;
+    cell.setAttribute('aria-label', formatDateLong(iso));
+    if (iso === today) cell.classList.add('today');
+    if (iso === pickedISO) { cell.classList.add('selected'); cell.setAttribute('aria-current', 'date'); }
+    cell.addEventListener('click', () => {
+      if (cell.classList.contains('other')) { calView.year = y; calView.month = m; }
+      setPicked(iso);
+    });
+    calGrid.appendChild(cell);
+  }
+}
+
+function openNewMeeting() {
+  pickedISO = todayISO();
+  const t = new Date();
+  calView = { year: t.getFullYear(), month: t.getMonth() };
+  meetingTitleInput.value = '';
+  setPicked(pickedISO);
+  modal.classList.add('show');
+  trapFocus(modal, meetingTitleInput);
+}
+function closeNewMeeting() { modal.classList.remove('show'); releaseFocus(modal); }
+
+$('#openNewMeeting').addEventListener('click', openNewMeeting);
+$('#cancelNewMeeting').addEventListener('click', closeNewMeeting);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeNewMeeting(); });
+
+$('#calPrev').addEventListener('click', () => {
+  calView.month--; if (calView.month < 0) { calView.month = 11; calView.year--; }
+  renderCal();
+});
+$('#calNext').addEventListener('click', () => {
+  calView.month++; if (calView.month > 11) { calView.month = 0; calView.year++; }
+  renderCal();
+});
+$('#calToday').addEventListener('click', () => {
+  const t = new Date();
+  calView = { year: t.getFullYear(), month: t.getMonth() };
+  setPicked(todayISO());
+});
+
+meetingTitleInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); createMeeting(); }
+});
+$('#createMeetingBtn').addEventListener('click', createMeeting);
+
+function createMeeting() {
+  const title = meetingTitleInput.value.trim() || 'Untitled meeting';
+  const m = newMeeting(title, pickedISO);
+  // initial status: scheduled if future, else ongoing
+  m.status = (pickedISO > todayISO()) ? 'scheduled' : 'ongoing';
+  m.lastOpenedAt = new Date().toISOString();
+  state.meetings.push(m);
+  state.currentId = m.id;
+  saveImmediate();
+  closeNewMeeting();
+  showApp();
+}
+
+/* ============================== WORKSPACE ================================ */
+const agendaListEl = $('#agendaList');
+const newItemInput = $('#newItemInput');
+const focusInner   = $('#focusInner');
+const crumbEl      = $('#crumb');
+const meetingMeta  = $('#meetingMeta');
+const notesArea    = $('#notesArea');
+const saveStatus   = $('#saveStatus');
+function setSaveStatus(s) {
+  // s: 'saving' | 'saved'
+  if (s === 'saving') {
+    saveStatus.textContent = 'Saving…';
+    saveStatus.classList.add('is-saving');
+    saveStatus.classList.remove('is-saved');
+  } else {
+    saveStatus.textContent = 'Saved';
+    saveStatus.classList.add('is-saved');
+    saveStatus.classList.remove('is-saving');
+  }
+}
+const actionBadge  = $('#actionBadge');
+const limitInput   = $('#limitInput');
+const meetingTitleDisplay = $('#meetingTitleDisplay');
+const meetingDateDisplay  = $('#meetingDateDisplay');
+
+function renderMeetingHeader() {
+  const m = cm(); if (!m) return;
+  meetingTitleDisplay.textContent = m.title || '';
+  meetingDateDisplay.innerHTML = `
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    ${escapeHTML(formatDateLong(m.date))}
+    <span class="status-tag ${m.status}" style="margin-left:6px;">${m.status}</span>
+  `;
+  $('#endMeetingBtn').textContent = m.status === 'done' ? 'Reopen meeting' : 'Mark as done ✓';
+}
+meetingTitleDisplay.addEventListener('input', () => {
+  const m = cm(); if (!m) return;
+  m.title = meetingTitleDisplay.textContent.trim(); save();
+});
+meetingTitleDisplay.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); meetingTitleDisplay.blur(); }
+});
+meetingTitleDisplay.addEventListener('blur', () => {
+  const m = cm(); if (!m) return;
+  if (!m.title) { m.title = 'Untitled meeting'; meetingTitleDisplay.textContent = m.title; save(); }
+});
+
+$('#backHome').addEventListener('click', () => {
+  saveImmediate();
+  showHome();
+});
+$('#endMeetingBtn').addEventListener('click', () => {
+  const m = cm(); if (!m) return;
+  if (m.status === 'done') {
+    // Reopening
+    m.status = 'ongoing';
+    m.endedAt = null;
+    startSession();
+  } else {
+    // Marking done — finalize duration and stamp end time
+    pauseSession();
+    m.status = 'done';
+    m.endedAt = new Date().toISOString();
+  }
+  saveImmediate();
+  renderMeetingHeader();
+  updateTimer();
+});
+
+/* ------------------ Agenda ------------------ */
+function renderAgenda() {
+  const m = cm(); if (!m) return;
+  agendaListEl.innerHTML = '';
+  m.items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    const isActive = item.id === m.activeId;
+    row.className = 'agenda-item' + (isActive ? ' active' : '');
+    row.draggable = true;
+    row.dataset.id = item.id;
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    row.setAttribute('aria-label', `Topic ${idx + 1}: ${item.title || 'Untitled'}`);
+    row.innerHTML = `
+      <span class="agenda-handle" title="Drag to reorder" aria-hidden="true">
+        <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="8" cy="2" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="8" cy="12" r="1.2"/></svg>
+      </span>
+      <span class="agenda-index">${idx + 1}</span>
+      <span class="agenda-title" data-id="${item.id}">${escapeHTML(item.title || 'Untitled')}</span>
+      <span class="agenda-meta">${item.limitMin ? item.limitMin+'m' : ''}</span>
+      <span class="agenda-actions">
+        <button class="mini-btn" data-act="edit" title="Rename" aria-label="Rename topic">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        </button>
+        <button class="mini-btn" data-act="del" title="Delete" aria-label="Delete topic">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </span>
+    `;
+    agendaListEl.appendChild(row);
+  });
+  meetingMeta.textContent = m.items.length;
+}
+
+function renderFocus(animate=true) {
+  const m = cm(); if (!m) return;
+  const item = activeItem();
+  const doRender = () => {
+    if (!item) {
+      focusInner.innerHTML = `
+        <div class="empty">
+          <h2>Ready when you are.</h2>
+          <p>Add agenda items on the left to begin. Click one to bring it into focus.</p>
+        </div>`;
+      crumbEl.textContent = 'Meeting';
+      notesArea.value = ''; limitInput.value = '';
+      renderActions(); return;
+    }
+    const idx = m.items.indexOf(item) + 1;
+    const notes = (item.notes || '').trim();
+    const hasNotes = notes.length > 0;
+    focusInner.innerHTML = `
+      <div class="focus-eyebrow">Topic ${idx} of ${m.items.length}</div>
+      <h1 class="focus-title" contenteditable="true" spellcheck="false"
+          data-placeholder="Untitled topic">${escapeHTML(item.title)}</h1>
+      <p class="focus-sub"><kbd>A</kbd> action items · <kbd>←</kbd> <kbd>→</kbd> topics · <kbd>?</kbd> help</p>
+      <div class="notes-preview" id="notesPreview" role="button" tabindex="0" aria-label="Open summary and tasks side by side" title="Click to open workspace">
+        <div class="notes-preview-label">
+          <span style="display:flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            General Summary
+          </span>
+          <span class="open-hint">
+            Open workspace
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="16" rx="1"/></svg>
+          </span>
+        </div>
+        <div class="notes-preview-text ${hasNotes?'':'is-empty'}">${hasNotes ? escapeHTML(notes) : 'No summary provided yet. Click here to start capturing key discussion points.'}</div>
+      </div>
+    `;
+    crumbEl.textContent = `Topic ${idx} / ${m.items.length}`;
+    notesArea.value = item.notes || '';
+    limitInput.value = item.limitMin || '';
+    bindFocusTitle();
+    bindNotesPreview();
+    renderActions();
+  };
+  if (animate) {
+    focusInner.classList.add('swap');
+    setTimeout(() => {
+      doRender();
+      requestAnimationFrame(() => focusInner.classList.remove('swap'));
+    }, 180);
+  } else doRender();
+}
+function bindFocusTitle() {
+  const t = $('.focus-title', focusInner);
+  if (!t) return;
+  t.addEventListener('input', () => {
+    const item = activeItem(); if (!item) return;
+    item.title = t.textContent.trim();
+    save();
+    const side = agendaListEl.querySelector(`.agenda-title[data-id="${item.id}"]`);
+    if (side) side.textContent = item.title || 'Untitled';
+  });
+  t.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } });
+}
+
+function bindNotesPreview() {
+  const p = $('#notesPreview');
+  if (!p) return;
+  const open = () => { openWorkspace('notes'); setTimeout(() => notesArea.focus(), 240); };
+  p.addEventListener('click', open);
+  p.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+  });
+}
+
+function refreshNotesPreview() {
+  const p = $('#notesPreview'); if (!p) return;
+  const item = activeItem(); if (!item) return;
+  const notes = (item.notes || '').trim();
+  const textEl = p.querySelector('.notes-preview-text');
+  if (!textEl) return;
+  if (notes) {
+    textEl.classList.remove('is-empty');
+    textEl.textContent = notes;
+  } else {
+    textEl.classList.add('is-empty');
+    textEl.textContent = 'No summary provided yet. Click here to start capturing key discussion points.';
+  }
+}
+
+/* -------- Sliding Notes column (topic ↔ selected task) -------- */
+const notesColBody  = $('#notesColBody');
+const taskNotesArea = $('#taskNotesArea');
+const taskNotesTarget = $('#taskNotesTarget');
+const topicNotesTarget = $('#topicNotesTarget');
+let activeTaskForNotes = null;
+const taskSaveTimers = {};
+
+function slideTaskNotesIn(t) {
+  activeTaskForNotes = t;
+  taskNotesArea.value = t.notes || '';
+  taskNotesTarget.textContent = '› ' + (t.name || 'Untitled task');
+  notesColBody.classList.add('task-active');
+  // ensure notes column is focused (accent strip)
+  colNotes.classList.add('focused');
+  colActions.classList.remove('focused');
+  updateNotesMeta();
+}
+function slideTaskNotesOut() {
+  notesColBody.classList.remove('task-active');
+  activeTaskForNotes = null;
+  updateNotesMeta();
+}
+function updateNotesMeta() {
+  const meta = $('#notesColMeta');
+  const item = activeItem();
+  if (!meta) return;
+  if (activeTaskForNotes) {
+    const wc = (activeTaskForNotes.notes||'').trim().split(/\s+/).filter(Boolean).length;
+    meta.textContent = wc ? `Task · ${wc} word${wc===1?'':'s'}` : 'Task notes';
+  } else if (item) {
+    const wc = (item.notes||'').trim().split(/\s+/).filter(Boolean).length;
+    meta.textContent = wc ? `Topic · ${wc} word${wc===1?'':'s'}` : 'General Summary';
+  } else {
+    meta.textContent = 'Per‑topic';
+  }
+}
+
+taskNotesArea.addEventListener('input', () => {
+  if (!activeTaskForNotes) return;
+  activeTaskForNotes.notes = taskNotesArea.value;
+  setSaveStatus('saving');
+  clearTimeout(taskSaveTimers.active);
+  taskSaveTimers.active = setTimeout(() => {
+    save(); setSaveStatus('saved');
+    updateNotesMeta();
+    // refresh badge dots on the task card without disrupting cursor — re-render is OK because focus stays on textarea via re-bind
+    renderActions();
+    // restore focus + caret after re-render
+    const ta = $('#taskNotesArea');
+    if (ta && document.activeElement !== ta) ta.focus();
+  }, 400);
+});
+taskNotesArea.addEventListener('blur', () => { save(); updateNotesMeta(); });
+
+$('#notesBackBtn').addEventListener('click', () => {
+  const m = cm(); if (!m) return;
+  if (m.selectedTaskId) { delete m.expandedTasks[m.selectedTaskId]; m.selectedTaskId = null; save(); renderActions(); }
+  slideTaskNotesOut();
+  setTimeout(() => notesArea.focus(), 200);
+});
+
+/* ------------------ Actions ------------------ */
+function renderActions() {
+  const m = cm(); if (!m) return;
+  const localList = $('#actionListLocal');
+  const item = activeItem();
+  const local = item ? m.tasks.filter(t => t.itemId === item.id) : [];
+  const all   = m.tasks;
+
+  const topicHeader = $('#topicHeader');
+  topicHeader.innerHTML = item ? `
+    <div class="topic-header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Adding to: <strong>${escapeHTML(item.title || 'Untitled')}</strong>
+    </div>` : `
+    <div class="topic-header" style="background:var(--surface-2); color:var(--muted);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Select an agenda item first.
+    </div>`;
+
+  localList.innerHTML = '';
+  if (!local.length) {
+    localList.innerHTML = item
+      ? `<div class="empty-list">No tasks for this topic yet. Add one above ↑</div>`
+      : `<div class="empty-list">Pick a topic to view its tasks.</div>`;
+  } else local.forEach(t => localList.appendChild(taskCard(t, false)));
+  $('#localCount').textContent = local.length;
+
+  const counts = { all: all.length, ongoing: 0, done: 0, abandoned: 0 };
+  all.forEach(t => counts[t.status] !== undefined && counts[t.status]++);
+
+  actionBadge.textContent = all.length;
+  actionBadge.classList.toggle('zero', all.length === 0);
+
+  const taskCountText = item
+    ? `${local.length} in this topic · ${all.length} total`
+    : `${all.length} total task${all.length===1?'':'s'}`;
+  $('#taskCount').textContent = taskCountText;
+
+  const actionsColMeta = $('#actionsColMeta');
+  if (actionsColMeta) {
+    actionsColMeta.textContent = item
+      ? `${local.length} here · ${all.length} total`
+      : `${all.length} total`;
+  }
+
+  // Summary target label (shows which topic these notes belong to)
+  if (topicNotesTarget) topicNotesTarget.textContent = item ? '› ' + (item.title || 'Untitled') : '';
+
+  // Keep sliding state in sync with selectedTaskId
+  if (m.selectedTaskId) {
+    const t = m.tasks.find(x => x.id === m.selectedTaskId);
+    if (t) {
+      // sync content if pane is showing this task
+      if (!activeTaskForNotes || activeTaskForNotes.id !== t.id) {
+        activeTaskForNotes = t;
+        taskNotesArea.value = t.notes || '';
+        taskNotesTarget.textContent = '› ' + (t.name || 'Untitled task');
+      } else {
+        taskNotesTarget.textContent = '› ' + (t.name || 'Untitled task');
+      }
+      notesColBody?.classList.add('task-active');
+    } else {
+      m.selectedTaskId = null;
+      slideTaskNotesOut();
+    }
+  } else {
+    notesColBody?.classList.remove('task-active');
+    activeTaskForNotes = null;
+  }
+  updateNotesMeta();
+  updateWorkspaceLayout();
+}
+
+function taskCard(t, showTopic=false) {
+  const m = cm();
+  const el = document.createElement('div');
+  const expanded = !!m.expandedTasks[t.id];
+  el.className = `action-card status-${t.status}` + (expanded ? ' expanded' : '');
+  el.dataset.id = t.id;
+  const item = m.items.find(i => i.id === t.itemId);
+  const linkCount = (t.links || []).length;
+  const hasNotes = !!(t.notes && t.notes.trim());
+
+  const meta = [
+    t.owner ? `<span class="meta-chip">👤 ${escapeHTML(t.owner)}</span>` : '',
+    t.due ? `<span class="meta-chip">📅 ${formatDateShort(t.due)}</span>` : '',
+    (showTopic && item) ? `<span class="agenda-tag">› ${escapeHTML(item.title || 'Untitled')}</span>` : '',
+    hasNotes ? `<span class="note-dot" title="Has notes"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>` : '',
+    linkCount ? `<span class="link-count" title="${linkCount} link${linkCount===1?'':'s'}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>${linkCount}</span>` : '',
+  ].filter(Boolean).join('');
+
+  const checkSvg = t.status === 'done'
+    ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    : t.status === 'abandoned'
+    ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+    : '';
+
+  el.innerHTML = `
+    <div class="action-row" data-act="toggle-expand">
+      <button class="action-check" data-act="cycle" title="Cycle status">${checkSvg}</button>
+      <div class="action-body">
+        <div class="action-name">${escapeHTML(t.name)}</div>
+        ${meta ? `<div class="action-meta">${meta}</div>` : ''}
+      </div>
+      <span class="status-pill ${t.status}">${t.status}</span>
+      <button class="delete-btn" data-act="del" title="Delete task">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    ${expanded ? renderExpand(t) : ''}
+  `;
+
+  el.querySelector('[data-act="toggle-expand"]').addEventListener('click', (e) => {
+    if (e.target.closest('[data-act="cycle"]') || e.target.closest('[data-act="del"]')) return;
+    const wasExpanded = !!m.expandedTasks[t.id];
+    // collapse any other expanded task so only one task is "selected" at a time
+    Object.keys(m.expandedTasks).forEach(k => { if (k !== t.id) delete m.expandedTasks[k]; });
+    m.expandedTasks[t.id] = !wasExpanded;
+    if (m.expandedTasks[t.id]) {
+      m.selectedTaskId = t.id;
+      slideTaskNotesIn(t);
+    } else if (m.selectedTaskId === t.id) {
+      m.selectedTaskId = null;
+      slideTaskNotesOut();
+    }
+    save(); renderActions();
+  });
+  el.querySelector('[data-act="cycle"]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const idx = STATUSES.indexOf(t.status);
+    t.status = STATUSES[(idx + 1) % STATUSES.length];
+    save(); renderActions();
+  });
+  el.querySelector('[data-act="del"]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (confirm(`Delete task "${t.name}"?`)) {
+      m.tasks = m.tasks.filter(x => x.id !== t.id);
+      delete m.expandedTasks[t.id];
+      if (m.selectedTaskId === t.id) { m.selectedTaskId = null; slideTaskNotesOut(); }
+      save(); renderActions();
+    }
+  });
+  if (expanded) wireExpand(el, t);
+  return el;
+}
+
+function renderExpand(t) {
+  const links = t.links || [];
+  return `
+    <div class="action-expand">
+      <div>
+        <div class="field-label">
+          <span>Status</span>
+          <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">
+            Notes for this task slide in on the left ←
+          </span>
+        </div>
+        <select class="status-select" data-task="${t.id}" data-field="status">
+          <option value="ongoing"   ${t.status==='ongoing'?'selected':''}>Ongoing</option>
+          <option value="done"      ${t.status==='done'?'selected':''}>Done</option>
+          <option value="abandoned" ${t.status==='abandoned'?'selected':''}>Abandoned</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">
+          <span>Links &amp; Attachments</span>
+          <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">${links.length} item${links.length===1?'':'s'}</span>
+        </div>
+        <div class="links-list" id="links-${t.id}">
+          ${links.length ? links.map(l => linkRowHTML(t.id, l)).join('') : '<div class="empty-list" style="padding:8px;">No links yet.</div>'}
+        </div>
+        <div class="link-form" data-task="${t.id}">
+          <input data-link-field="label" placeholder="Label (optional)" />
+          <input data-link-field="url" placeholder="URL or /path/to/folder" />
+          <button data-link-add>+ Add</button>
+        </div>
+        <div class="link-hint">
+          Tip: paste a URL (https://…), a local file path (e.g. <code>/Users/me/Docs</code> or <code>C:\\Projects</code>),
+          or a UNC share. Local <code>file://</code> links may need to be opened from your file manager.
+        </div>
+      </div>
+    </div>
+  `;
+}
+function linkRowHTML(taskId, l) {
+  const href = normalizeHref(l.url);
+  const local = isLocalLink(href);
+  const display = l.label && l.label.trim() ? l.label : (local ? linkDisplay(href) : (linkHostname(href) || href));
+  const sub = local ? linkDisplay(href) : href;
+  return `
+    <div class="link-row" data-link-id="${l.id}" data-task="${taskId}">
+      <span class="link-icon" title="${local ? 'Local folder/file' : 'Web link'}">
+        ${local
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'}
+      </span>
+      <a class="link-text" href="${escapeAttr(href)}" target="_blank" rel="noopener" title="${escapeAttr(href)}">
+        <div class="link-label">${escapeHTML(display)}</div>
+        ${l.label && sub && sub !== display ? `<div class="link-url">${escapeHTML(sub)}</div>` : ''}
+      </a>
+      <div class="link-actions">
+        <button class="mini-btn" data-link-act="copy" title="Copy path">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button class="mini-btn" data-link-act="del" title="Remove link">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function wireExpand(cardEl, t) {
+  const m = cm();
+  const sel = cardEl.querySelector(`select[data-task="${t.id}"]`);
+  sel?.addEventListener('change', () => { t.status = sel.value; save(); renderActions(); });
+
+  const form = cardEl.querySelector(`.link-form[data-task="${t.id}"]`);
+  const labelInp = form?.querySelector('[data-link-field="label"]');
+  const urlInp   = form?.querySelector('[data-link-field="url"]');
+  const addBtn   = form?.querySelector('[data-link-add]');
+  const addLink = () => {
+    const url = urlInp.value.trim(); if (!url) return;
+    t.links = t.links || [];
+    t.links.push({ id: uid(), label: labelInp.value.trim(), url });
+    labelInp.value = ''; urlInp.value = '';
+    save(); renderActions();
+  };
+  addBtn?.addEventListener('click', addLink);
+  urlInp?.addEventListener('keydown', e => { if (e.key==='Enter') addLink(); });
+  labelInp?.addEventListener('keydown', e => { if (e.key==='Enter') addLink(); });
+
+  cardEl.querySelectorAll('.link-row').forEach(row => {
+    const linkId = row.dataset.linkId;
+    row.querySelector('[data-link-act="del"]')?.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      t.links = (t.links || []).filter(l => l.id !== linkId);
+      save(); renderActions();
+    });
+    row.querySelector('[data-link-act="copy"]')?.addEventListener('click', async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const l = (t.links || []).find(x => x.id === linkId); if (!l) return;
+      const href = normalizeHref(l.url);
+      try {
+        await navigator.clipboard.writeText(href);
+        const btn = e.currentTarget; const orig = btn.innerHTML;
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(() => btn.innerHTML = orig, 1200);
+      } catch { prompt('Copy this:', href); }
+    });
+  });
+}
+
+/* ------------------ Workspace events ------------------ */
+newItemInput.addEventListener('keydown', e => {
+  const m = cm(); if (!m) return;
+  if (e.key === 'Enter' && newItemInput.value.trim()) {
+    e.preventDefault();
+    const item = { id: uid(), title: newItemInput.value.trim(), notes: '', limitMin: 0 };
+    m.items.push(item);
+    m.activeId = item.id;
+    m.selectedTaskId = null;
+    Object.keys(m.expandedTasks).forEach(k => delete m.expandedTasks[k]);
+    newItemInput.value = '';
+    save(); 
+    renderAgenda(); 
+    renderFocus(false);
+    slideTaskNotesOut();
+    openWorkspace('actions');
+    setTimeout(() => {
+      const taskInput = $('#taskName');
+      if (taskInput) taskInput.focus();
+    }, 240);
+  }
+});
+
+agendaListEl.addEventListener('click', e => {
+  const m = cm(); if (!m) return;
+  const row = e.target.closest('.agenda-item'); if (!row) return;
+  const id = row.dataset.id;
+  const actBtn = e.target.closest('[data-act]');
+  if (actBtn) {
+    const act = actBtn.dataset.act;
+    if (act === 'del') {
+      if (!confirm('Delete this agenda item and its tasks?')) return;
+      m.items = m.items.filter(i => i.id !== id);
+      m.tasks = m.tasks.filter(t => t.itemId !== id);
+      if (m.activeId === id) m.activeId = m.items[0]?.id || null;
+      save(); renderAgenda(); renderFocus(false);
+    } else if (act === 'edit') {
+      const titleEl = row.querySelector('.agenda-title');
+      titleEl.contentEditable = 'true';
+      titleEl.focus();
+      document.getSelection().selectAllChildren(titleEl);
+      titleEl.addEventListener('blur', () => {
+        titleEl.contentEditable = 'false';
+        const item = m.items.find(i => i.id === id);
+        if (item) { item.title = titleEl.textContent.trim() || 'Untitled'; save(); renderAgenda(); if (item.id===m.activeId) renderFocus(false); }
+      }, { once: true });
+      titleEl.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); titleEl.blur(); } });
+    }
+    return;
+  }
+  if (m.activeId !== id) {
+    m.activeId = id;
+    // Switching topics: clear any task selection so notes slide back to topic
+    m.selectedTaskId = null;
+    Object.keys(m.expandedTasks).forEach(k => delete m.expandedTasks[k]);
+    save(); renderAgenda(); renderFocus(true);
+    slideTaskNotesOut();
+  }
+});
+
+agendaListEl.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const row = e.target.closest('.agenda-item'); if (!row) return;
+  // Ignore when focus is on an inner control or while editing the title
+  if (e.target !== row) return;
+  const titleEl = row.querySelector('.agenda-title');
+  if (titleEl && titleEl.getAttribute('contenteditable') === 'true') return;
+  e.preventDefault();
+  const m = cm(); if (!m) return;
+  const id = row.dataset.id;
+  if (m.activeId !== id) {
+    m.activeId = id;
+    m.selectedTaskId = null;
+    Object.keys(m.expandedTasks).forEach(k => delete m.expandedTasks[k]);
+    save(); renderAgenda(); renderFocus(true);
+    slideTaskNotesOut();
+    // Keep focus on the corresponding row after re-render
+    const again = agendaListEl.querySelector(`.agenda-item[data-id="${id}"]`);
+    again?.focus();
+  }
+});
+
+let dragId = null;
+agendaListEl.addEventListener('dragstart', e => {
+  const row = e.target.closest('.agenda-item'); if (!row) return;
+  dragId = row.dataset.id; row.classList.add('dragging');
+});
+agendaListEl.addEventListener('dragend', () => {
+  $$('.agenda-item').forEach(r => r.classList.remove('dragging','drag-over'));
+  dragId = null;
+});
+agendaListEl.addEventListener('dragover', e => {
+  e.preventDefault();
+  const row = e.target.closest('.agenda-item');
+  $$('.agenda-item').forEach(r => r.classList.remove('drag-over'));
+  if (row && row.dataset.id !== dragId) row.classList.add('drag-over');
+});
+agendaListEl.addEventListener('drop', e => {
+  e.preventDefault();
+  const m = cm(); if (!m) return;
+  const row = e.target.closest('.agenda-item');
+  if (!row || !dragId || row.dataset.id === dragId) return;
+  const from = m.items.findIndex(i => i.id === dragId);
+  const to   = m.items.findIndex(i => i.id === row.dataset.id);
+  const [mv] = m.items.splice(from, 1);
+  m.items.splice(to, 0, mv);
+  save(); renderAgenda();
+});
+
+let saveTimer;
+notesArea.addEventListener('input', () => {
+  const item = activeItem(); if (!item) return;
+  item.notes = notesArea.value;
+  setSaveStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { save(); setSaveStatus('saved'); refreshNotesPreview(); }, 350);
+});
+notesArea.addEventListener('blur', refreshNotesPreview);
+limitInput.addEventListener('change', () => {
+  const item = activeItem(); if (!item) return;
+  item.limitMin = parseInt(limitInput.value, 10) || 0;
+  save(); renderAgenda();
+});
+
+$('#addTaskBtn').addEventListener('click', addTask);
+$('#taskName').addEventListener('keydown', e => { if (e.key==='Enter') addTask(); });
+$('#taskOwner').addEventListener('keydown', e => { if (e.key==='Enter') addTask(); });
+function addTask() {
+  const m = cm(); if (!m) return;
+  const name = $('#taskName').value.trim(); if (!name) return;
+  if (!m.activeId) { alert('Please select an agenda item first.'); return; }
+  m.tasks.push({
+    id: uid(), name,
+    owner: $('#taskOwner').value.trim(),
+    due:   $('#taskDate').value,
+    status: 'ongoing', notes: '', links: [],
+    itemId: m.activeId,
+  });
+  $('#taskName').value = ''; $('#taskOwner').value = ''; $('#taskDate').value = '';
+  save(); renderActions();
+}
+
+/* ---------- Unified workspace panel (Notes + Actions side by side) ---------- */
+const scrim     = $('#scrim');
+const workPanel = $('#workPanel');
+const colNotes  = $('#colNotes');
+const colActions= $('#colActions');
+let workspaceMode = 'split';
+
+function updateWorkspaceLayout() {
+  const m = cm();
+  const hasSelectedTask = !!(m && m.selectedTaskId);
+  const collapseNotes = workspaceMode !== 'notes' && !hasSelectedTask;
+  workPanel.classList.toggle('notes-collapsed', collapseNotes);
+}
+
+/**
+ * Open the combined panel.
+ *   mode = 'notes'   → focus the Notes column
+ *   mode = 'actions' → focus the Actions column
+ *   mode = 'split'   → both shown equally with neither highlighted
+ */
+function openWorkspace(mode='split') {
+  workspaceMode = mode;
+  workPanel.classList.add('show');
+  scrim.classList.add('show');
+  colNotes.classList.toggle('focused',   mode === 'notes');
+  colActions.classList.toggle('focused', mode === 'actions');
+  refreshNotesPreview();
+  renderActions();
+  updateWorkspaceLayout();
+}
+function closePanels() {
+  workPanel.classList.remove('show');
+  scrim.classList.remove('show');
+  colNotes.classList.remove('focused');
+  colActions.classList.remove('focused');
+  workPanel.classList.remove('notes-collapsed');
+}
+$('#openActions').addEventListener('click', () => {
+  openWorkspace('actions');
+  setTimeout(() => $('#taskName')?.focus(), 240);
+});
+scrim.addEventListener('click', () => { closePanels(); closeExportMenu(); });
+$$('[data-close]').forEach(b => b.addEventListener('click', closePanels));
+
+/* Clicking a column header focuses it (subtle accent strip) */
+colNotes.querySelector('.panel-col-header').addEventListener('click', (e) => {
+  if (e.target.closest('button')) return;
+  colNotes.classList.add('focused'); colActions.classList.remove('focused');
+});
+colActions.querySelector('.panel-col-header').addEventListener('click', (e) => {
+  if (e.target.closest('button')) return;
+  colActions.classList.add('focused'); colNotes.classList.remove('focused');
+});
+
+$('#prevBtn').addEventListener('click', () => navigate(-1));
+$('#nextBtn').addEventListener('click', () => navigate(1));
+function navigate(dir) {
+  const m = cm(); if (!m || !m.items.length) return;
+  let i = m.items.findIndex(x => x.id === m.activeId);
+  if (i < 0) i = 0;
+  const next = (i + dir + m.items.length) % m.items.length;
+  m.activeId = m.items[next].id;
+  m.selectedTaskId = null;
+  Object.keys(m.expandedTasks).forEach(k => delete m.expandedTasks[k]);
+  save(); renderAgenda(); renderFocus(true);
+  slideTaskNotesOut();
+}
+
+/* ============================== KEYBOARD SHORTCUTS ======================
+ * Mnemonic & non-conflicting set:
+ *   ←  →   Previous / next topic
+ *   N      Open NOTES
+ *   A      Open ACTION ITEMS
+ *   Space  Pause / resume the meeting session timer
+ *   Esc    Smart-close: if a task is selected → back to summary;
+ *          else close the open panel / menus
+ *   ?      Show keyboard shortcuts help
+ */
+const shortcutsModal = $('#shortcutsModal');
+function openShortcuts() { shortcutsModal.classList.add('show'); trapFocus(shortcutsModal); }
+function closeShortcuts() { shortcutsModal.classList.remove('show'); releaseFocus(shortcutsModal); }
+$('#helpBtn').addEventListener('click', openShortcuts);
+shortcutsModal.addEventListener('click', (e) => { if (e.target === shortcutsModal) closeShortcuts(); });
+shortcutsModal.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeShortcuts));
+
+document.addEventListener('keydown', e => {
+  // Home screen: require clicking the intro CTA before proceeding
+  if (!homeEl.classList.contains('hidden')) {
+    if (!introDismissed) {
+      
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); openShortcuts(); }
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (modal.classList.contains('show')) closeNewMeeting();
+      if (shortcutsModal.classList.contains('show')) closeShortcuts();
+    }
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); openShortcuts(); }
+    return;
+  }
+  const t = e.target;
+  const typing = ['INPUT','TEXTAREA','SELECT'].includes(t.tagName) || t.isContentEditable;
+  if (typing) {
+    if (e.key === 'Escape') {
+      // First Esc: blur the field. If a task is selected, go back to summary.
+      t.blur?.();
+      const m = cm();
+      if (m && m.selectedTaskId) {
+        $('#notesBackBtn')?.click();
+      }
+    }
+    return;
+  }
+  // Modals take precedence
+  if (shortcutsModal.classList.contains('show')) {
+    if (e.key === 'Escape') closeShortcuts();
+    return;
+  }
+  if (e.key === 'ArrowRight') navigate(1);
+  else if (e.key === 'ArrowLeft') navigate(-1);
+
+  else if (e.key.toLowerCase() === 'a') { e.preventDefault(); openWorkspace('actions'); setTimeout(()=>$('#taskName')?.focus(),240); }
+  else if (e.key === ' ') { e.preventDefault(); toggleTimer(); }
+  else if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); openShortcuts(); }
+  else if (e.key === 'Escape') {
+    const m = cm();
+    if (m && m.selectedTaskId && workPanel.classList.contains('show')) {
+      $('#notesBackBtn')?.click();
+    } else {
+      closePanels(); closeExportMenu();
+    }
+  }
+});
+
+/* ============================ MEETING SESSION TIMER =====================
+ * Tracks total time spent in a meeting across sessions.
+ *  - durationSec accumulates everything from past sessions
+ *  - sessionStartedAt is the ISO when the *current* live session began
+ *  - Total elapsed = durationSec + (now - sessionStartedAt)
+ *  - Auto-starts when a meeting is opened, auto-pauses on back/close/done
+ *  - User can pause/resume via the topbar timer button
+ */
+let timerInt = null;
+const timerDisplay = $('#timerDisplay');
+const timerEl      = $('#timer');
+const playIcon     = $('#playIcon');
+const pauseIcon    = $('#pauseIcon');
+
+function fmtTime(s) {
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s/3600), mm = Math.floor((s%3600)/60), ss = s%60;
+  if (h > 0) return `${h}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+function fmtDurationHuman(s) {
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s/3600), mm = Math.floor((s%3600)/60);
+  if (h > 0) return `${h}h ${mm}m`;
+  if (mm > 0) return `${mm}m`;
+  const ss = s%60; return `${ss}s`;
+}
+function currentMeetingElapsed() {
+  const m = cm(); if (!m) return 0;
+  let total = m.durationSec || 0;
+  if (m.sessionStartedAt) {
+    total += Math.max(0, (Date.now() - new Date(m.sessionStartedAt).getTime()) / 1000);
+  }
+  return total;
+}
+function updateTimer() {
+  const m = cm();
+  timerDisplay.textContent = fmtTime(currentMeetingElapsed());
+  if (!m) { timerEl.classList.remove('over'); return; }
+  const running = !!m.sessionStartedAt;
+  playIcon.style.display  = running ? 'none' : '';
+  pauseIcon.style.display = running ? ''     : 'none';
+  timerEl.classList.remove('over'); // no soft-limit color on the meeting timer
+}
+function startSession() {
+  const m = cm(); if (!m) return;
+  if (m.sessionStartedAt) return;
+  m.sessionStartedAt = new Date().toISOString();
+  saveImmediate();
+  if (!timerInt) timerInt = setInterval(updateTimer, 1000);
+  updateTimer();
+}
+function pauseSession() {
+  const m = cm(); if (!m) return;
+  if (!m.sessionStartedAt) return;
+  const delta = (Date.now() - new Date(m.sessionStartedAt).getTime()) / 1000;
+  m.durationSec = (m.durationSec || 0) + Math.max(0, delta);
+  m.sessionStartedAt = null;
+  saveImmediate();
+  updateTimer();
+}
+function toggleTimer() {
+  const m = cm(); if (!m) return;
+  if (m.sessionStartedAt) {
+    pauseSession();
+  } else {
+    if (m.status === 'done') {
+      // Resuming a done meeting reopens it so duration tracking is meaningful
+      m.status = 'ongoing'; m.endedAt = null;
+      renderMeetingHeader();
+    }
+    startSession();
+  }
+}
+function resetTimer() {
+  const m = cm(); if (!m) return;
+  if (!confirm('Reset session timer to 00:00? This clears the recorded duration for this meeting.')) return;
+  m.durationSec = 0;
+  m.sessionStartedAt = m.sessionStartedAt ? new Date().toISOString() : null;
+  saveImmediate();
+  updateTimer();
+}
+$('#timerToggle').addEventListener('click', toggleTimer);
+$('#timerReset').addEventListener('click', resetTimer);
+
+// Pause when window/tab is hidden, resume when visible (so background time doesn't accrue inaccurately)
+// Actually we DO want background time to count (the meeting is still happening). Just ensure ticker runs.
+// Persist on unload
+window.addEventListener('beforeunload', () => { saveImmediate(); });
+
+function applyTheme() {
+  document.documentElement.dataset.theme = state.theme;
+  const isDark = state.theme === 'dark';
+  document.querySelectorAll('.theme-toggle').forEach(btn => {
+    btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+  });
+}
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(); save();
+}
+$('#themeBtn').addEventListener('click', toggleTheme);
+$('#themeBtnHome').addEventListener('click', toggleTheme);
+$('#fullscreenBtn').addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+$('#openSidebar')?.addEventListener('click', () => $('#sidebar').classList.add('show'));
+$('#closeSidebar')?.addEventListener('click', () => $('#sidebar').classList.remove('show'));
+
+/* ================================ EXPORT ================================ */
+const exportMenu = $('#exportMenu');
+const exportBtn  = $('#exportBtn');
+function openExportMenu() { exportMenu.classList.add('show'); }
+function closeExportMenu() { exportMenu.classList.remove('show'); }
+exportBtn.addEventListener('click', (e) => { e.stopPropagation(); exportMenu.classList.toggle('show'); });
+document.addEventListener('click', (e) => {
+  if (!exportMenu.contains(e.target) && e.target !== exportBtn && !exportBtn.contains(e.target)) closeExportMenu();
+});
+exportMenu.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-export]'); if (!btn) return;
+  closeExportMenu();
+  const kind = btn.dataset.export;
+  if (kind === 'pdf') exportPDF();
+  else if (kind === 'md') exportMarkdown();
+  else if (kind === 'csv') exportCSV();
+});
+
+$('#exportNotesBtn').addEventListener('click', () => {
+  const item = activeItem(); if (!item) return alert('No active topic.');
+  const text = `# ${item.title}\n\n${item.notes || '(no notes)'}\n`;
+  download(text, `notes-${slug(item.title)}.txt`);
+});
+$('#exportTasksBtn').addEventListener('click', exportCSV);
+
+function exportCSV() {
+  const m = cm(); if (!m) return;
+  if (!m.tasks.length) return alert('No tasks yet.');
+  const rows = [['Task','Owner','Due','Status','Topic','Notes','Links']];
+  m.tasks.forEach(t => {
+    const item = m.items.find(i => i.id === t.itemId);
+    const links = (t.links || []).map(l => (l.label?l.label+': ':'') + normalizeHref(l.url)).join(' | ');
+    rows.push([t.name, t.owner||'', t.due||'', t.status, item?.title||'', (t.notes||'').replace(/\n/g,' '), links]);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  download(csv, `${slug(m.title)}-tasks.csv`, 'text/csv');
+}
+
+function exportMarkdown() {
+  const m = cm(); if (!m) return;
+  const date = formatDateLong(m.date);
+  let md = `# ${m.title || 'Untitled Meeting'}\n_${date}_\n\n`;
+  m.items.forEach((it, i) => {
+    md += `## ${i+1}. ${it.title}\n\n`;
+    if (it.notes) md += it.notes + '\n\n';
+    const tasks = m.tasks.filter(t => t.itemId === it.id);
+    if (tasks.length) {
+      md += `**Action Items**\n`;
+      tasks.forEach(t => {
+        const box = t.status==='done'?'x':t.status==='abandoned'?'~':' ';
+        md += `- [${box}] **${t.name}** _(${t.status})_`;
+        if (t.owner) md += ` — ${t.owner}`;
+        if (t.due)   md += ` (due ${t.due})`;
+        md += '\n';
+        if (t.notes && t.notes.trim()) {
+          md += t.notes.trim().split('\n').map(l => `    > ${l}`).join('\n') + '\n';
+        }
+        if (t.links && t.links.length) {
+          t.links.forEach(l => {
+            const href = normalizeHref(l.url);
+            const label = l.label || href;
+            md += `    - [${label}](${href})\n`;
+          });
+        }
+      });
+      md += '\n';
+    }
+  });
+  const orphan = m.tasks.filter(t => !m.items.find(i => i.id === t.itemId));
+  if (orphan.length) {
+    md += `## Other Action Items\n`;
+    orphan.forEach(t => {
+      const box = t.status==='done'?'x':t.status==='abandoned'?'~':' ';
+      md += `- [${box}] ${t.name} _(${t.status})_${t.owner?` — ${t.owner}`:''}${t.due?` (due ${t.due})`:''}\n`;
+    });
+  }
+  download(md, `${slug(m.title)}-${m.date}.md`);
+}
+
+function exportPDF() {
+  const m = cm(); if (!m) return;
+  const root = $('#printRoot');
+  const counts = { ongoing: 0, done: 0, abandoned: 0 };
+  m.tasks.forEach(t => counts[t.status]!==undefined && counts[t.status]++);
+
+  let liveDur = m.durationSec || 0;
+  if (m.sessionStartedAt) liveDur += Math.max(0, (Date.now() - new Date(m.sessionStartedAt).getTime()) / 1000);
+  const totalLinks = m.tasks.reduce((n, t) => n + ((t.links || []).length), 0);
+  const generatedAt = new Date().toLocaleString();
+  const statusLabel = m.status || 'ongoing';
+  const summaryCards = `
+    <div class="pr-summary">
+      <div class="pr-stat"><div class="label">Agenda items</div><div class="num">${m.items.length}</div></div>
+      <div class="pr-stat"><div class="label">Tasks</div><div class="num">${m.tasks.length}</div></div>
+      <div class="pr-stat"><div class="label">Open tasks</div><div class="num">${counts.ongoing}</div></div>
+      <div class="pr-stat"><div class="label">Links</div><div class="num">${totalLinks}</div></div>
+    </div>`;
+
+  let html = `
+    <div class="pr-doc">
+      <section class="pr-cover">
+        <div class="pr-brand">Clarify · Meeting Notes</div>
+        <div class="pr-cover-top">
+          <div class="pr-cover-title-wrap">
+            <h1>${escapeHTML(m.title || 'Untitled Meeting')}</h1>
+            <div class="pr-date">${escapeHTML(formatDateLong(m.date))}</div>
+            <p class="pr-lead">A structured export of discussion notes, decisions, and action items captured during this meeting.</p>
+          </div>
+          <div class="pr-cover-status">${escapeHTML(statusLabel)}</div>
+        </div>
+
+        <div class="pr-meta-grid">
+          <div class="pr-meta-card">
+            <div class="pr-meta-k">Duration</div>
+            <div class="pr-meta-v">${liveDur > 0 ? escapeHTML(fmtDurationHuman(liveDur)) : 'Not recorded'}</div>
+          </div>
+          <div class="pr-meta-card">
+            <div class="pr-meta-k">Generated</div>
+            <div class="pr-meta-v">${escapeHTML(generatedAt)}</div>
+          </div>
+          <div class="pr-meta-card">
+            <div class="pr-meta-k">Completed</div>
+            <div class="pr-meta-v">${m.endedAt ? escapeHTML(new Date(m.endedAt).toLocaleString()) : 'In progress'}</div>
+          </div>
+          <div class="pr-meta-card">
+            <div class="pr-meta-k">Task progress</div>
+            <div class="pr-meta-v">${counts.ongoing} ongoing · ${counts.done} done · ${counts.abandoned} abandoned</div>
+          </div>
+        </div>
+
+        ${summaryCards}
+
+        ${m.items.length ? `
+          <div class="pr-toc">
+            <h3>Contents</h3>
+            <ol>${m.items.map(it => `<li>${escapeHTML(it.title || 'Untitled')}</li>`).join('')}</ol>
+          </div>` : ''}
+      </section>`;
+
+  m.items.forEach((it, i) => {
+    const tasks = m.tasks.filter(t => t.itemId === it.id);
+    const hasNotes = !!(it.notes && it.notes.trim());
+    html += `
+      <section class="pr-topic">
+        <div class="pr-topic-head">
+          <div>
+            <div class="pr-topic-meta">Topic ${i+1} of ${m.items.length}</div>
+            <h2>${escapeHTML(it.title || 'Untitled')}</h2>
+          </div>
+          ${it.limitMin ? `<div class="pr-limit">${it.limitMin} min</div>` : ''}
+        </div>`;
+
+    if (hasNotes) {
+      html += `
+        <div class="pr-section">
+          <div class="pr-section-title">Notes</div>
+          <div class="pr-notes">${escapeHTML(it.notes)}</div>
+        </div>`;
+    }
+
+    if (tasks.length) {
+      html += `
+        <div class="pr-section">
+          <div class="pr-section-title">Action Items</div>
+          <div class="pr-task-list">`;
+
+      tasks.forEach(t => {
+        const metaParts = [];
+        if (t.owner) metaParts.push(`Owner: ${escapeHTML(t.owner)}`);
+        if (t.due) metaParts.push(`Due: ${escapeHTML(formatDateShort(t.due))}`);
+        html += `
+          <div class="pr-task">
+            <div class="pr-task-head">
+              <span class="pr-task-name ${t.status}">${escapeHTML(t.name)}</span>
+              <span class="pr-status ${t.status}">${t.status}</span>
+            </div>
+            ${metaParts.length ? `<div class="pr-task-meta">${metaParts.join(' · ')}</div>` : ''}
+            ${t.notes && t.notes.trim() ? `<div class="pr-task-notes">${escapeHTML(t.notes)}</div>` : ''}
+            ${(t.links && t.links.length) ? `
+              <div class="pr-links">
+                ${t.links.map(l => {
+                  const href = normalizeHref(l.url);
+                  const label = l.label ? `<span class="pr-link-label">${escapeHTML(l.label)}</span>` : '';
+                  return `<a class="pr-link" href="${escapeAttr(href)}">${label}${escapeHTML(linkDisplay(href))}</a>`;
+                }).join('')}
+              </div>` : ''}
+          </div>`;
+      });
+
+      html += `</div></div>`;
+    }
+
+    if (!hasNotes && !tasks.length) {
+      html += `<div class="pr-empty">No notes or action items were captured for this topic.</div>`;
+    }
+
+    html += `</section>`;
+  });
+
+  const orphan = m.tasks.filter(t => !m.items.find(i => i.id === t.itemId));
+  if (orphan.length) {
+    html += `
+      <section class="pr-topic">
+        <div class="pr-topic-head">
+          <div>
+            <div class="pr-topic-meta">Unlinked items</div>
+            <h2>Other Action Items</h2>
+          </div>
+        </div>
+        <div class="pr-section">
+          <div class="pr-section-title">Action Items</div>
+          <div class="pr-task-list">`;
+
+    orphan.forEach(t => {
+      const metaParts = [];
+      if (t.owner) metaParts.push(`Owner: ${escapeHTML(t.owner)}`);
+      if (t.due) metaParts.push(`Due: ${escapeHTML(formatDateShort(t.due))}`);
+      html += `
+        <div class="pr-task">
+          <div class="pr-task-head">
+            <span class="pr-task-name ${t.status}">${escapeHTML(t.name)}</span>
+            <span class="pr-status ${t.status}">${t.status}</span>
+          </div>
+          ${metaParts.length ? `<div class="pr-task-meta">${metaParts.join(' · ')}</div>` : ''}
+          ${t.notes && t.notes.trim() ? `<div class="pr-task-notes">${escapeHTML(t.notes)}</div>` : ''}
+          ${(t.links && t.links.length) ? `
+            <div class="pr-links">
+              ${t.links.map(l => {
+                const href = normalizeHref(l.url);
+                const label = l.label ? `<span class="pr-link-label">${escapeHTML(l.label)}</span>` : '';
+                return `<a class="pr-link" href="${escapeAttr(href)}">${label}${escapeHTML(linkDisplay(href))}</a>`;
+              }).join('')}
+            </div>` : ''}
+        </div>`;
+    });
+
+    html += `</div></div></section>`;
+  }
+
+  html += `</div>`;
+
+  root.innerHTML = html;
+  const prevTitle = document.title;
+  document.title = `${m.title || 'Meeting'} — ${m.date}`;
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { document.title = prevTitle; root.innerHTML = ''; }, 500);
+  }, 80);
+}
+
+function download(content, filename, type='text/plain') {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function slug(s) { return (s||'untitled').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40); }
+
+/* ================================ BOOT =================================== */
+applyTheme();
+// Always start on the home/list screen
+state.currentId = null;
+// Splash appears for 4 seconds like a loading screen
+introTimer = setTimeout(() => dismissIntro(), 3000);
+saveImmediate();
+renderHome();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a057d1748f7f6e63',t:'MTc4MDQxNzU3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

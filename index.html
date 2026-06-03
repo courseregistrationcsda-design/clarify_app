@@ -1,8 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Clarify — Meeting Companion</title>
@@ -51,6 +50,77 @@
     --shadow-md: 0 4px 14px rgba(0,0,0,0.4);
     --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
   }
+
+  /* ============ AUTH STYLES ============ */
+  #auth-container {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 300ms ease;
+  }
+  .auth-card {
+    width: min(100%, 400px);
+    margin: 24px;
+    padding: 36px 32px 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+  .auth-card h2 {
+    font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+  .auth-card .auth-sub {
+    font-size: 14px; color: var(--muted);
+    margin: 0 0 28px;
+  }
+  .auth-card form {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .auth-card input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color var(--t);
+  }
+  .auth-card input:focus { border-color: var(--accent); }
+  .auth-card button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: white;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity var(--t);
+    margin-top: 4px;
+  }
+  .auth-card button[type="submit"]:hover { opacity: 0.92; }
+  .auth-card .auth-switch {
+    margin-top: 20px;
+    font-size: 13px; color: var(--muted);
+  }
+  .auth-card .auth-switch a {
+    color: var(--accent); font-weight: 500;
+    text-decoration: none; cursor: pointer;
+  }
+  .auth-card .auth-switch a:hover { text-decoration: underline; }
+  #auth-message {
+    margin-top: 12px; font-size: 13px; min-height: 20px;
+    padding: 8px 12px; border-radius: 8px;
+  }
+  #auth-message.error { color: var(--danger); background: #fef2f2; }
+  #auth-message.success { color: var(--success); background: var(--success-soft); }
+
 
   * { box-sizing: border-box; }
 
@@ -1687,6 +1757,45 @@
 </head>
 <body>
 
+<!-- ===================== AUTH ===================== -->
+<div id="auth-container">
+  <div class="auth-card">
+    <h2 id="auth-title">Welcome Back</h2>
+    <p class="auth-sub" id="auth-subtitle">Sign in to access your meetings</p>
+
+    <!-- Sign Up Form -->
+    <form id="signup-form" style="display:none;">
+      <input type="email" id="signup-email" placeholder="Email" required />
+      <input type="password" id="signup-password" placeholder="Password (6+ characters)" minlength="6" required />
+      <button type="submit">Sign Up</button>
+      <p class="auth-switch">
+        Already have an account?
+        <a href="#" id="show-login">Log in</a>
+      </p>
+    </form>
+
+    <!-- Login Form -->
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="Email" required />
+      <input type="password" id="login-password" placeholder="Password" required />
+      <button type="submit">Log In</button>
+      <p class="auth-switch">
+        No account yet?
+        <a href="#" id="show-signup">Sign up</a>
+      </p>
+    </form>
+
+    <div id="auth-message"></div>
+  </div>
+</div>
+
+<!-- ===================== APP (hidden until logged in) ===================== -->
+<div id="app-content" style="display:none;">
+  <p style="position:fixed;top:10px;right:20px;z-index:9999;font-size:13px;color:var(--muted);">
+    <span id="user-email-display"></span>
+    <button id="logout-btn-top" style="margin-left:12px;padding:4px 10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:12px;">Log Out</button>
+  </p>
+
 <!-- ===================== HOME / LAUNCH SCREEN ===================== -->
 <div class="home intro-active" id="homeScreen">
   <div class="home-intro" id="introSplash">
@@ -2098,7 +2207,123 @@
 <div id="printRoot"></div>
 
 <script>
+/* ============================= SUPABASE AUTH ============================ */
+const SUPABASE_URL = 'https://mwuucjzjenrkwqgfdzsv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GflvFq5PX5lOpm4GyJVOwA_E2Gb1WyP';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== AUTH UI REFERENCES =====
+const authContainer = document.getElementById('auth-container');
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const authTitle = document.getElementById('auth-title');
+const authSubtitle = document.getElementById('auth-subtitle');
+const authMessage = document.getElementById('auth-message');
+const appContent = document.getElementById('app-content');
+const userEmailDisplay = document.getElementById('user-email-display');
+
+// ===== TOGGLE BETWEEN LOGIN & SIGNUP =====
+document.getElementById('show-signup').addEventListener('click', function(e) {
+  e.preventDefault();
+  loginForm.style.display = 'none';
+  signupForm.style.display = 'block';
+  authTitle.textContent = 'Create Account';
+  authSubtitle.textContent = 'Set up your free account to get started';
+  authMessage.textContent = '';
+  authMessage.className = '';
+});
+
+document.getElementById('show-login').addEventListener('click', function(e) {
+  e.preventDefault();
+  signupForm.style.display = 'none';
+  loginForm.style.display = 'block';
+  authTitle.textContent = 'Welcome Back';
+  authSubtitle.textContent = 'Sign in to access your meetings';
+  authMessage.textContent = '';
+  authMessage.className = '';
+});
+
+// ===== SIGN UP =====
+signupForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  authMessage.textContent = '';
+  authMessage.className = '';
+
+  var email = document.getElementById('signup-email').value;
+  var password = document.getElementById('signup-password').value;
+
+  var result = await supabase.auth.signUp({ email: email, password: password });
+
+  if (result.error) {
+    authMessage.textContent = result.error.message;
+    authMessage.className = 'error';
+    return;
+  }
+
+  if (result.data.user) {
+    // If identities is empty, user already exists
+    if (result.data.user.identities && result.data.user.identities.length === 0) {
+      authMessage.textContent = 'Account already exists. Please log in instead.';
+      authMessage.className = 'error';
+    } else {
+      authMessage.textContent = 'Account created! You can now log in.';
+      authMessage.className = 'success';
+      // Switch to login form
+      signupForm.style.display = 'none';
+      loginForm.style.display = 'block';
+      authTitle.textContent = 'Welcome Back';
+      authSubtitle.textContent = 'Sign in to access your meetings';
+    }
+  }
+});
+
+// ===== LOG IN =====
+loginForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  authMessage.textContent = '';
+  authMessage.className = '';
+
+  var email = document.getElementById('login-email').value;
+  var password = document.getElementById('login-password').value;
+
+  var result = await supabase.auth.signInWithPassword({ email: email, password: password });
+
+  if (result.error) {
+    authMessage.textContent = result.error.message;
+    authMessage.className = 'error';
+    return;
+  }
+
+  // Success — the onAuthStateChange listener below handles showing the app
+});
+
+// ===== LOG OUT =====
+document.getElementById('logout-btn-top').addEventListener('click', async function() {
+  await supabase.auth.signOut();
+});
+
+// ===== WATCH AUTH STATE =====
+supabase.auth.onAuthStateChange(function(event, session) {
+  if (session && session.user) {
+    // User is logged in — show the app
+    authContainer.style.display = 'none';
+    appContent.style.display = '';
+    userEmailDisplay.textContent = session.user.email;
+  } else {
+    // User is logged out — show auth
+    authContainer.style.display = '';
+    appContent.style.display = 'none';
+    loginForm.style.display = 'block';
+    signupForm.style.display = 'none';
+    authTitle.textContent = 'Welcome Back';
+    authSubtitle.textContent = 'Sign in to access your meetings';
+    authMessage.textContent = '';
+    authMessage.className = '';
+  }
+});
+
 /* ============================= STATE / STORAGE ============================ */
+
 const STORAGE_KEY = 'facilitate.v4';
 const LEGACY_KEYS = ['facilitate.v3','facilitate.v2','facilitate.v1'];
 const STATUSES = ['ongoing','done','abandoned'];     // task statuses
@@ -4206,5 +4431,6 @@ if (shareId) {
 }
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</div><!-- /app-content -->
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05fdbb0794ee300',t:'MTc4MDUwMTg3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

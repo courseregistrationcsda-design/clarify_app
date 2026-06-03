@@ -2207,13 +2207,24 @@
 <div id="printRoot"></div>
 
 <script>
-/* ============================= SUPABASE AUTH ============================ */
-document.addEventListener('DOMContentLoaded', function() {
-  var SUPABASE_URL = 'https://mwuucjzjenrkwqgfdzsv.supabase.co';
-  var SUPABASE_ANON_KEY = 'sb_publishable_GflvFq5PX5lOpm4GyJVOwA_E2Gb1WyP';
-  var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ============================= SUPABASE CLIENT (global) ============================ */
+var SUPABASE_URL = 'https://mwuucjzjenrkwqgfdzsv.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_GflvFq5PX5lOpm4GyJVOwA_E2Gb1WyP';
+var supabaseClient;
 
-  // ===== AUTH UI REFERENCES =====
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e) {
+  console.error('Supabase init failed:', e);
+}
+
+/* ============================= AUTH UI (runs on DOM ready) ============================ */
+(function initAuth() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAuth);
+    return;
+  }
+
   var authContainer = document.getElementById('auth-container');
   var loginForm = document.getElementById('login-form');
   var signupForm = document.getElementById('signup-form');
@@ -2226,132 +2237,143 @@ document.addEventListener('DOMContentLoaded', function() {
   var showLoginLink = document.getElementById('show-login');
   var logoutBtn = document.getElementById('logout-btn-top');
 
-  // ===== TOGGLE BETWEEN LOGIN & SIGNUP =====
+  function showError(msg) {
+    if (authMessage) {
+      authMessage.textContent = msg;
+      authMessage.className = 'error';
+      authMessage.style.color = 'var(--danger)';
+      authMessage.style.background = '#fef2f2';
+      authMessage.style.padding = '8px 12px';
+      authMessage.style.borderRadius = '8px';
+      authMessage.style.display = 'block';
+    }
+  }
+
+  function showSuccess(msg) {
+    if (authMessage) {
+      authMessage.textContent = msg;
+      authMessage.className = 'success';
+      authMessage.style.color = 'var(--success)';
+      authMessage.style.background = 'var(--success-soft)';
+      authMessage.style.padding = '8px 12px';
+      authMessage.style.borderRadius = '8px';
+      authMessage.style.display = 'block';
+    }
+  }
+
+  // Toggle signup/login
   if (showSignupLink) {
     showSignupLink.addEventListener('click', function(e) {
       e.preventDefault();
-      loginForm.style.display = 'none';
-      signupForm.style.display = 'block';
-      authTitle.textContent = 'Create Account';
-      authSubtitle.textContent = 'Set up your free account to get started';
-      authMessage.textContent = '';
-      authMessage.className = '';
+      if (loginForm) loginForm.style.display = 'none';
+      if (signupForm) signupForm.style.display = 'block';
+      if (authTitle) authTitle.textContent = 'Create Account';
+      if (authSubtitle) authSubtitle.textContent = 'Set up your free account to get started';
+      if (authMessage) { authMessage.textContent = ''; authMessage.className = ''; authMessage.style.display = 'none'; }
     });
   }
 
   if (showLoginLink) {
     showLoginLink.addEventListener('click', function(e) {
       e.preventDefault();
-      signupForm.style.display = 'none';
-      loginForm.style.display = 'block';
-      authTitle.textContent = 'Welcome Back';
-      authSubtitle.textContent = 'Sign in to access your meetings';
-      authMessage.textContent = '';
-      authMessage.className = '';
+      if (signupForm) signupForm.style.display = 'none';
+      if (loginForm) loginForm.style.display = 'block';
+      if (authTitle) authTitle.textContent = 'Welcome Back';
+      if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
+      if (authMessage) { authMessage.textContent = ''; authMessage.className = ''; authMessage.style.display = 'none'; }
     });
   }
 
-  // ===== SIGN UP =====
+  // Sign Up
   if (signupForm) {
     signupForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      authMessage.textContent = '';
-      authMessage.className = '';
+      if (!supabaseClient) { showError('Supabase not loaded. Check your connection.'); return; }
+      if (authMessage) { authMessage.textContent = ''; authMessage.style.display = 'none'; }
 
-      var email = document.getElementById('signup-email').value;
+      var email = document.getElementById('signup-email').value.trim();
       var password = document.getElementById('signup-password').value;
 
-      if (!email || !password) {
-        authMessage.textContent = 'Please fill in both fields.';
-        authMessage.className = 'error';
-        return;
-      }
+      if (!email || !password) { showError('Please fill in both fields.'); return; }
+      if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
 
       try {
         var result = await supabaseClient.auth.signUp({ email: email, password: password });
 
-        if (result.error) {
-          authMessage.textContent = result.error.message;
-          authMessage.className = 'error';
-          return;
-        }
+        if (result.error) { showError(result.error.message); return; }
 
         if (result.data.user) {
-          if (result.data.user.identities && result.data.user.identities.length === 0) {
-            authMessage.textContent = 'Account already exists. Please log in instead.';
-            authMessage.className = 'error';
-          } else {
-            authMessage.textContent = 'Account created! You can now log in.';
-            authMessage.className = 'success';
-            signupForm.style.display = 'none';
-            loginForm.style.display = 'block';
-            authTitle.textContent = 'Welcome Back';
-            authSubtitle.textContent = 'Sign in to access your meetings';
-          }
+          showSuccess('Account created! You can now log in below.');
+          signupForm.style.display = 'none';
+          loginForm.style.display = 'block';
+          if (authTitle) authTitle.textContent = 'Welcome Back';
+          if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
+          document.getElementById('login-email').value = email;
         }
       } catch (err) {
-        authMessage.textContent = 'Something went wrong: ' + err.message;
-        authMessage.className = 'error';
+        showError('Connection error: ' + (err.message || 'Unknown error'));
       }
     });
   }
 
-  // ===== LOG IN =====
+  // Log In
   if (loginForm) {
     loginForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      authMessage.textContent = '';
-      authMessage.className = '';
+      if (!supabaseClient) { showError('Supabase not loaded. Check your connection.'); return; }
+      if (authMessage) { authMessage.textContent = ''; authMessage.style.display = 'none'; }
 
-      var email = document.getElementById('login-email').value;
+      var email = document.getElementById('login-email').value.trim();
       var password = document.getElementById('login-password').value;
 
-      if (!email || !password) {
-        authMessage.textContent = 'Please fill in both fields.';
-        authMessage.className = 'error';
-        return;
-      }
+      if (!email || !password) { showError('Please fill in both fields.'); return; }
 
       try {
         var result = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
 
-        if (result.error) {
-          authMessage.textContent = result.error.message;
-          authMessage.className = 'error';
-          return;
-        }
-        // Success — the onAuthStateChange listener handles showing the app
+        if (result.error) { showError(result.error.message); return; }
+        // Success — onAuthStateChange handles showing app
       } catch (err) {
-        authMessage.textContent = 'Something went wrong: ' + err.message;
-        authMessage.className = 'error';
+        showError('Connection error: ' + (err.message || 'Unknown error'));
       }
     });
   }
 
-  // ===== LOG OUT =====
+  // Log Out
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async function() {
-      await supabaseClient.auth.signOut();
+      if (supabaseClient) await supabaseClient.auth.signOut();
     });
   }
 
-  // ===== WATCH AUTH STATE =====
-  supabaseClient.auth.onAuthStateChange(function(event, session) {
-    if (session && session.user) {
-      authContainer.style.display = 'none';
-      appContent.style.display = '';
-      if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
-    } else {
-      authContainer.style.display = '';
-      appContent.style.display = 'none';
-      if (loginForm) loginForm.style.display = 'block';
-      if (signupForm) signupForm.style.display = 'none';
-      if (authTitle) authTitle.textContent = 'Welcome Back';
-      if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
-      if (authMessage) { authMessage.textContent = ''; authMessage.className = ''; }
-    }
-  });
-});
+  // Watch auth state
+  if (supabaseClient) {
+    supabaseClient.auth.onAuthStateChange(function(event, session) {
+      if (session && session.user) {
+        if (authContainer) authContainer.style.display = 'none';
+        if (appContent) appContent.style.display = '';
+        if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+        if (event === 'SIGNED_IN') {
+          syncAllFromSupabase().then(function() {
+            if (typeof renderHome === 'function') renderHome();
+            if (typeof renderTeams === 'function') renderTeams();
+          });
+        } else {
+          if (typeof renderHome === 'function') renderHome();
+          if (typeof renderTeams === 'function') renderTeams();
+        }
+      } else {
+        if (authContainer) authContainer.style.display = '';
+        if (appContent) appContent.style.display = 'none';
+        if (loginForm) loginForm.style.display = 'block';
+        if (signupForm) signupForm.style.display = 'none';
+        if (authTitle) authTitle.textContent = 'Welcome Back';
+        if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
+        if (authMessage) { authMessage.textContent = ''; authMessage.className = ''; authMessage.style.display = 'none'; }
+      }
+    });
+  }
+})();
 
 /* ============================= SUPABASE DATA LAYER ============================ */
 /* ---- Teams ---- */
@@ -2450,6 +2472,7 @@ function unsubscribeFromMeetings() {
 
 /* ---- Sync teams to localStorage on login ---- */
 async function syncAllFromSupabase() {
+  if (!supabaseClient) { console.warn('syncAllFromSupabase: supabaseClient not ready'); return; }
   try {
     var teams = await loadTeamsFromSupabase();
     state.teams = teams;

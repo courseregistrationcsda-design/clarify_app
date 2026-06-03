@@ -2769,34 +2769,86 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
   const btn = $('#copyViewerBtn'); btn.textContent = 'Copied!'; setTimeout(()=>btn.textContent='Copy', 2000);
 });
 
-// Multi-Tab Sync (Real-time Simulation)
-window.addEventListener('storage', (e) => {
-  if (e.key === STORAGE_KEY && e.newValue) {
-    try {
-      const parsed = JSON.parse(e.newValue);
-      state = Object.assign(state, parsed);
-      state.meetings = (state.meetings || []).map(normalizeMeeting);
-      
-      if (state.currentId) {
-        const m = state.meetings.find(x => x.id === state.currentId);
-        if (!m) { showHome(); return; }
-        
-        renderMeetingHeader();
-        renderAgenda();
-        renderFocus(false);
-        refreshNotesPreview();
-        if (document.getElementById('workPanel')?.classList.contains('show')) {
-          renderActions();
-        }
-      } else {
-        if (!document.getElementById('homeScreen').classList.contains('hidden')) {
-          renderHome();
-          if(typeof renderTeams === 'function') renderTeams();
-        }
+
+// ==================== REAL-TIME MULTIPLAYER SYNC ====================
+let bc = null;
+try {
+  bc = new BroadcastChannel('clarify_sync');
+  
+  bc.onmessage = (e) => {
+    if (!e.data) return;
+    
+    // 1. Viewer requests meeting state
+    if (e.data.type === 'REQUEST_STATE' && state.currentId === e.data.id) {
+      const m = cm();
+      if (m && m.shareEnabled) {
+        bc.postMessage({ type: 'STATE_PAYLOAD', meeting: m });
       }
-    } catch(err) {}
+    }
+    
+    // 2. Viewer receives meeting state
+    if (e.data.type === 'STATE_PAYLOAD' && state.currentId === e.data.meeting.id) {
+      const idx = state.meetings.findIndex(x => x.id === e.data.meeting.id);
+      if (idx > -1) state.meetings[idx] = e.data.meeting;
+      else state.meetings.push(e.data.meeting);
+      
+      saveImmediate();
+      refreshUI();
+    }
+    
+    // 3. Update from Collaborator/Owner
+    if (e.data.type === 'UPDATE' && e.data.state) {
+      const incomingState = e.data.state;
+      state = Object.assign(state, incomingState);
+      state.meetings = (state.meetings || []).map(normalizeMeeting);
+      saveImmediate();
+      refreshUI();
+    }
+  };
+} catch(err) {
+  console.warn("BroadcastChannel not supported or blocked.");
+}
+
+function broadcastUpdate() {
+  if (bc) {
+    try { bc.postMessage({ type: 'UPDATE', state: state }); } catch(e) {}
   }
-});
+}
+
+function refreshUI() {
+  const loader = document.getElementById('syncLoader');
+  if (loader) loader.remove();
+  appEl.style.display = '';
+  if (state.currentId) {
+    const m = state.meetings.find(x => x.id === state.currentId);
+    if (!m) { showHome(); return; }
+    
+    renderMeetingHeader();
+    renderAgenda();
+    renderFocus(false);
+    refreshNotesPreview();
+    if (document.getElementById('workPanel')?.classList.contains('show')) {
+      renderActions();
+    }
+  } else {
+    if (!document.getElementById('homeScreen').classList.contains('hidden')) {
+      renderHome();
+      if (typeof renderTeams === 'function') renderTeams();
+    }
+  }
+}
+// Hook into save
+const originalSaveImmediate = saveImmediate;
+saveImmediate = () => {
+  originalSaveImmediate();
+  broadcastUpdate();
+};
+
+const originalSave = save;
+save = () => {
+  originalSave();
+  broadcastUpdate();
+};
 
 /* ========================================================================= */
 
@@ -3979,12 +4031,46 @@ function slug(s) { return (s||'untitled').toLowerCase().replace(/[^a-z0-9]+/g,'-
 
 /* ================================ BOOT =================================== */
 applyTheme();
-// Always start on the home/list screen
-state.currentId = null;
-// Splash appears for 4 seconds like a loading screen
 introTimer = setTimeout(() => dismissIntro(), 3000);
-saveImmediate();
-renderHome();
+
+const urlParams = new URLSearchParams(window.location.search);
+const shareId = urlParams.get('id');
+const userRole = urlParams.get('role');
+
+if (shareId) {
+  // If sharing is opened, we will request data via BroadcastChannel if missing locally
+  state.currentId = shareId;
+  introDismissed = true;
+  homeEl.classList.remove('intro-active');
+  introSplash?.classList.add('hidden');
+  
+  if (userRole === 'viewer' || userRole === 'editor') {
+    document.body.classList.toggle('role-viewer', userRole === 'viewer');
+    if (typeof bc !== 'undefined' && bc) {
+      setTimeout(() => bc.postMessage({ type: 'REQUEST_STATE', id: shareId }), 200);
+    }
+  }
+  
+  const sm = state.meetings.find(x => x.id === shareId);
+  if (sm && sm.shareEnabled) {
+    showApp();
+  } else {
+    // If not found locally, we wait a moment for the broadcast channel to sync it.
+    // If it never arrives, it just stays blank or we can show an empty state.
+    appEl.style.display = '';
+    homeEl.classList.add('hidden');
+    const loader = document.createElement('div');
+    loader.id = 'syncLoader';
+    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;color:var(--subtle);';
+    loader.textContent = 'Waiting for host to sync meeting data...';
+    document.body.appendChild(loader);
+  }
+} else {
+  state.currentId = null;
+  saveImmediate();
+  renderHome();
+}
+
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f0b98df2e26d1',t:'MTc4MDQ5MzM1MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

@@ -1681,6 +1681,7 @@
   body.role-viewer #openNewTeamBtn,
   body.role-viewer #topbarShareBtn { display: none !important; }
 </style>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
@@ -2428,6 +2429,11 @@ function showApp() {
   if (m && m.status !== 'done') startSession();
   else updateTimer();
   if (!timerInt) timerInt = setInterval(updateTimer, 1000);
+  
+  const isHost = !new URLSearchParams(window.location.search).get('id');
+  if (m && isHost && m.shareEnabled) {
+    initP2P(m, true);
+  }
 }
 
 groupsEl.addEventListener('click', e => {
@@ -2748,6 +2754,11 @@ $('#shareToggle')?.addEventListener('change', (e) => {
   saveImmediate();
   updateShareLinks(m);
   renderMeetingHeader();
+  if (m.shareEnabled) {
+    initP2P(m, true);
+  } else {
+    if (peer) { peer.destroy(); peer = null; p2pConns = []; }
+  }
 });
 function updateShareLinks(m) {
   const container = $('#shareLinksContainer');
@@ -2771,54 +2782,88 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 });
 
 
-// ==================== REAL-TIME MULTIPLAYER SYNC ====================
-let bc = null;
-try {
-  bc = new BroadcastChannel('clarify_sync');
+
+// ==================== P2P INTERNET SYNC (PeerJS) ====================
+let peer = null;
+let p2pConns = [];
+let hostConn = null;
+
+function initP2P(m, isHost) {
+  if (typeof Peer === 'undefined') {
+    setTimeout(() => initP2P(m, isHost), 200);
+    return;
+  }
   
-  bc.onmessage = (e) => {
-    if (!e.data) return;
-    
-    // 1. Viewer requests meeting state
-    if (e.data.type === 'REQUEST_STATE' && state.currentId === e.data.id) {
-      const m = cm();
-      if (m && m.shareEnabled) {
-        bc.postMessage({ type: 'STATE_PAYLOAD', meeting: m });
-      }
-    }
-    
-    // 2. Viewer receives meeting state
-    if (e.data.type === 'STATE_PAYLOAD' && state.currentId === e.data.meeting.id) {
-      const idx = state.meetings.findIndex(x => x.id === e.data.meeting.id);
-      if (idx > -1) state.meetings[idx] = e.data.meeting;
-      else state.meetings.push(e.data.meeting);
-      
-      originalSaveImmediate();
-      refreshUI();
-    }
-    
-    // 3. Update from Collaborator/Owner
-    if (e.data.type === 'UPDATE' && e.data.state) {
-      const incomingState = e.data.state;
-      state = Object.assign(state, incomingState);
-      state.meetings = (state.meetings || []).map(normalizeMeeting);
-      originalSaveImmediate();
-      refreshUI();
-    }
-  };
-} catch(err) {
-  console.warn("BroadcastChannel not supported or blocked.");
+  if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
+  
+  if (isHost && m.shareEnabled) {
+    peer = new Peer('clarify-' + m.id);
+    peer.on('connection', (conn) => {
+      p2pConns.push(conn);
+      conn.on('data', (data) => {
+        if (data.type === 'REQUEST_STATE') {
+          conn.send({ type: 'STATE_PAYLOAD', meeting: cm() });
+        }
+        if (data.type === 'UPDATE' && data.state) {
+          handleIncomingUpdate(data.state);
+          // Bounce to other connected viewers
+          p2pConns.forEach(c => { if(c !== conn && c.open) c.send(data); });
+        }
+      });
+      conn.on('close', () => { p2pConns = p2pConns.filter(c => c !== conn); });
+    });
+  } else if (!isHost) {
+    peer = new Peer();
+    peer.on('open', () => {
+      hostConn = peer.connect('clarify-' + m.id);
+      hostConn.on('open', () => {
+        hostConn.send({ type: 'REQUEST_STATE', id: m.id });
+      });
+      hostConn.on('data', (data) => {
+        if (data.type === 'STATE_PAYLOAD') {
+          const idx = state.meetings.findIndex(x => x.id === data.meeting.id);
+          if (idx > -1) state.meetings[idx] = data.meeting;
+          else state.meetings.push(data.meeting);
+          originalSaveImmediate();
+          refreshUI();
+        }
+        if (data.type === 'UPDATE' && data.state) {
+          handleIncomingUpdate(data.state);
+        }
+      });
+      hostConn.on('close', () => {
+        // Host disconnected
+        const loader = document.getElementById('syncLoader');
+        if (loader) loader.textContent = 'Host disconnected. Meeting is offline.';
+      });
+    });
+  }
+}
+
+function handleIncomingUpdate(incomingState) {
+  state = Object.assign(state, incomingState);
+  state.meetings = (state.meetings || []).map(normalizeMeeting);
+  originalSaveImmediate();
+  refreshUI();
 }
 
 function broadcastUpdate() {
-  if (bc) {
-    try { bc.postMessage({ type: 'UPDATE', state: state }); } catch(e) {}
+  const payload = { type: 'UPDATE', state: state };
+  if (hostConn && hostConn.open) {
+    hostConn.send(payload);
+  } else {
+    p2pConns.forEach(c => { if(c.open) c.send(payload); });
   }
 }
 
 function refreshUI() {
   const loader = document.getElementById('syncLoader');
-  if (loader) loader.remove();
+  if (loader) {
+    loader.remove();
+    showApp(); 
+    return;
+  }
+  
   appEl.style.display = '';
   if (state.currentId) {
     const m = state.meetings.find(x => x.id === state.currentId);
@@ -2838,6 +2883,7 @@ function refreshUI() {
     }
   }
 }
+
 // Hook into save
 const originalSaveImmediate = saveImmediate;
 saveImmediate = () => {
@@ -2850,7 +2896,6 @@ save = () => {
   originalSave();
   broadcastUpdate();
 };
-
 /* ========================================================================= */
 
 function createMeeting() {
@@ -4073,5 +4118,5 @@ if (shareId) {
 }
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f1bdc7a8a06ff',t:'MTc4MDQ5NDAxNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f2742590510a2',t:'MTc4MDQ5NDQ4NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

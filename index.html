@@ -2784,24 +2784,42 @@ let peer = null;
 let p2pConns = [];
 let hostConn = null;
 
+
+const PEER_CONFIG = {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' }
+    ]
+  }
+};
+
 function initP2P(m, isHost) {
   if (typeof Peer === 'undefined') {
     setTimeout(() => initP2P(m, isHost), 200);
     return;
   }
   
+  if (!window.RTCPeerConnection) {
+    alert("Warning: Your browser or app (like Messenger) is blocking Live Sync. Please open this link in standard Safari or Chrome.");
+  }
+  
   if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
   
   if (isHost && m.shareEnabled) {
+    peer = new Peer('clarify-' + m.id, PEER_CONFIG);
     
-    peer = new Peer('clarify-' + m.id);
     peer.on('error', (err) => {
-      console.warn("PeerJS Error:", err);
-      // If ID is taken (Host reloaded), we could randomly suffix it, but Viewer wouldn't know the suffix.
-      // So we just log it. A forced disconnect/reconnect might help.
+      console.warn("PeerJS Host Error:", err);
+      // If the ID is trapped by a ghost session, we try to aggressively reconnect it.
+      if (err.type === 'unavailable-id') {
+        setTimeout(() => {
+          if (peer && peer.destroyed === false) peer.reconnect();
+        }, 2000);
+      }
     });
+    
     peer.on('connection', (conn) => {
-
       p2pConns.push(conn);
       conn.on('open', () => { renderAvatars(); });
       conn.on('data', (data) => {
@@ -2815,12 +2833,17 @@ function initP2P(m, isHost) {
         }
       });
       conn.on('close', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
+      conn.on('error', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
     });
   } else if (!isHost) {
-    peer = new Peer();
+    peer = new Peer(PEER_CONFIG);
+    
+    peer.on('error', (err) => {
+      console.warn("PeerJS Viewer Error:", err);
+    });
+    
     peer.on('open', () => {
-      
-      hostConn = peer.connect('clarify-' + m.id);
+      hostConn = peer.connect('clarify-' + m.id, { reliable: true });
       
       const syncTimeout = setTimeout(() => {
         const loader = document.getElementById('syncLoader');
@@ -2828,8 +2851,13 @@ function initP2P(m, isHost) {
           loader.innerHTML = `<div style="max-width:400px;text-align:center;">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
             <h3 style="color:var(--text);margin:0 0 8px;">Connection Failed</h3>
-            <p style="margin:0;font-size:14px;">We couldn't connect to the meeting Host. Please ensure the Host currently has this meeting open on their device.</p>
-            <button class="primary-btn" style="margin-top:20px;" onclick="window.location.search='';">Go to Home</button>
+            <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">We couldn't reach the meeting Host.</p>
+            <div style="background:var(--surface-2);padding:12px;border-radius:8px;font-size:13px;text-align:left;color:var(--text);margin-bottom:20px;">
+              <strong>Troubleshooting:</strong><br>
+              1. Ensure the Host has the meeting tab open right now.<br>
+              2. <strong>In-app browsers (like Messenger) block syncing.</strong> Please tap the menu (•••) and select "Open in Safari" or "Open in Chrome".
+            </div>
+            <button class="primary-btn" onclick="window.location.search='';">Go to Home</button>
           </div>`;
         }
       }, 8000); // 8 second timeout
@@ -2857,7 +2885,10 @@ function initP2P(m, isHost) {
         const loader = document.getElementById('syncLoader');
         if (loader) loader.textContent = 'Host disconnected. Meeting is offline.';
       });
-
+      hostConn.on('error', () => {
+        clearTimeout(syncTimeout);
+        renderAvatars();
+      });
     });
   }
 }
@@ -4173,5 +4204,5 @@ if (shareId) {
 }
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f3817f92cf51a',t:'MTc4MDQ5NTE3NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

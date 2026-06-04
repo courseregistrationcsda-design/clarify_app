@@ -2290,16 +2290,27 @@ catch(e) { console.error('Supabase init error:', e); }
         if (wrap) wrap.style.display = 'block';
         if (uemail) uemail.textContent = session.user.email;
 
-        // Dismiss intro splash
+        // Dismiss intro + sync from Supabase + render
         setTimeout(function() {
           try {
             var home = document.getElementById('homeScreen');
             if (home) home.classList.remove('intro-active');
             var splash = document.getElementById('introSplash');
             if (splash) splash.classList.add('hidden');
-            if (typeof renderHome === 'function') renderHome();
-            if (typeof renderTeams === 'function') renderTeams();
           } catch(e) {}
+          // Pull meetings & teams from Supabase, then render
+          if (typeof syncAllFromSupabase === 'function') {
+            syncAllFromSupabase().then(function() {
+              try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
+              try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
+            }).catch(function() {
+              try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
+              try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
+            });
+          } else {
+            try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
+            try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
+          }
         }, 400);
       } else {
         // Logged out
@@ -2404,18 +2415,32 @@ async function notifyTeamOfMeeting(teamId, meetingId, meetingTitle) {
 /* ============================= STATE / STORAGE ============================ */
 /* ---- Supabase Sync Helpers ---- */
 async function saveMeetingToSupabase(m) {
-  if (!supabaseClient) return;
+  if (!supabaseClient) { console.warn('saveMeeting: no supabaseClient'); return; }
   try {
     var session = await supabaseClient.auth.getSession();
     var userId = session.data.session ? session.data.session.user.id : null;
+    var creator = m.createdBy || userId;
+    if (!creator) { console.warn('saveMeeting: no creator found, skipping'); return; }
     var copy = JSON.parse(JSON.stringify(m));
     copy.updatedAt = new Date().toISOString();
-    await supabaseClient.from('meetings').upsert({
-      id: m.id, title: m.title, date: m.date, status: m.status,
-      data: copy, org_id: m.teamId || null,
-      created_by: m.createdBy || userId, updated_at: copy.updatedAt
-    });
-  } catch(e) { console.error('saveMeetingToSupabase:', e); }
+    copy.createdBy = creator;
+    var record = {
+      id: m.id,
+      title: m.title || 'Untitled meeting',
+      date: m.date,
+      status: m.status || 'ongoing',
+      data: copy,
+      org_id: m.teamId || null,
+      created_by: creator,
+      updated_at: copy.updatedAt
+    };
+    var result = await supabaseClient.from('meetings').upsert(record);
+    if (result.error) {
+      console.error('saveMeeting upsert error:', result.error.message, result.error.details);
+    } else {
+      console.log('saveMeeting OK:', m.id, m.title);
+    }
+  } catch(e) { console.error('saveMeetingToSupabase exception:', e.message); }
 }
 
 async function loadMeetingsFromSupabase() {
@@ -2493,11 +2518,23 @@ function subscribeToMeetings(meetingId, onUpdate) {
   if (!supabaseClient) return;
   try {
     if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); }
+    console.log('subscribeToMeetings:', meetingId);
     realtimeChannel = supabaseClient
       .channel('m-' + meetingId)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'meetings', filter: 'id=eq.' + meetingId }, function(p) {
+        console.log('Realtime UPDATE received:', p.new ? p.new.id : 'no data');
         if (p.new && p.new.data) onUpdate(p.new.data);
-      }).subscribe();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meetings', filter: 'id=eq.' + meetingId }, function(p) {
+        console.log('Realtime INSERT received:', p.new ? p.new.id : 'no data');
+        if (p.new && p.new.data) onUpdate(p.new.data);
+      })
+      .subscribe(function(status) {
+        console.log('Realtime channel status:', status);
+        if (status === 'SUBSCRIBED') console.log('✅ Realtime connected!');
+        if (status === 'CHANNEL_ERROR') console.error('❌ Realtime error');
+        if (status === 'TIMED_OUT') console.error('❌ Realtime timeout');
+      });
   } catch(e) { console.error('subscribe:', e); }
 }
 
@@ -2526,16 +2563,18 @@ const newMeeting = (title='', date=todayISO()) => ({
   status: 'scheduled',
   createdAt: new Date().toISOString(),
   lastOpenedAt: null,
+  updatedAt: new Date().toISOString(),
   items: [],
   tasks: [],
   activeId: null,
   expandedTasks: {},
   statusFilter: 'all',
   selectedTaskId: null,
+  createdBy: null,  // filled by createMeeting
   // Session timing
-  durationSec: 0,             // accumulated duration across all sessions (seconds)
-  sessionStartedAt: null,     // ISO timestamp when current session started (null if not running)
-  endedAt: null,              // ISO timestamp when meeting was marked done
+  durationSec: 0,
+  sessionStartedAt: null,
+  endedAt: null,
 });
 
 const defaultState = () => ({
@@ -2609,6 +2648,8 @@ function normalizeMeeting(m) {
     sessionStartedAt: m.sessionStartedAt || null,
     endedAt: m.endedAt || null,
     status: M_STATUSES.includes(m.status) ? m.status : 'scheduled',
+    createdBy: m.createdBy || null,
+    updatedAt: m.updatedAt || null,
   };
 }
 function computeAutoStatus(m) {
@@ -2630,15 +2671,27 @@ let save = (() => {
     t = setTimeout(() => {
       setStorage(JSON.stringify(state));
       var m = cm();
-      if (m) saveMeetingToSupabase(m);
+      if (m) {
+        m.updatedAt = new Date().toISOString();
+        saveMeetingToSupabase(m).catch(function(e) { console.error('save fail:', e); });
+      }
     }, 150);
   };
 })();
 let saveImmediate = () => {
   setStorage(JSON.stringify(state));
   var m = cm();
-  if (m) saveMeetingToSupabase(m);
+  if (m) {
+    m.updatedAt = new Date().toISOString();
+    saveMeetingToSupabase(m).catch(function(e) { console.error('saveImmediate fail:', e); });
+  }
 };
+
+// Auto-sync: push current meeting state to Supabase immediately (for realtime)
+function pushMeetingNow() {
+  var m = cm();
+  if (m && supabaseClient) { saveMeetingToSupabase(m); }
+}
 
 function cm() { return state.meetings.find(m => m.id === state.currentId); }
 
@@ -3364,62 +3417,39 @@ function initP2P(m, isHost) {
   }
 }
 
-function handleIncomingUpdate(incomingState) {
-  state = Object.assign(state, incomingState);
-  state.meetings = (state.meetings || []).map(normalizeMeeting);
-  originalSaveImmediate();
-  refreshUI();
-}
+// handleIncomingUpdate removed
 
-function broadcastUpdate() {
-  const payload = { type: 'UPDATE', state: state };
-  if (hostConn && hostConn.open) {
-    hostConn.send(payload);
-  } else {
-    p2pConns.forEach(c => { if(c.open) c.send(payload); });
-  }
-}
+
+// broadcastUpdate removed
+
 
 function refreshUI() {
-  const loader = document.getElementById('syncLoader');
-  if (loader) {
-    loader.remove();
-    showApp(); 
-    return;
-  }
+  // Clean refresh for Supabase realtime updates
+  var loader = document.getElementById('syncLoader');
+  if (loader) { loader.remove(); showApp(); return; }
   
-  appEl.style.display = '';
   if (state.currentId) {
-    const m = state.meetings.find(x => x.id === state.currentId);
+    var m = state.meetings.find(function(x) { return x.id === state.currentId; });
     if (!m) { showHome(); return; }
-    
-    renderMeetingHeader();
-    renderAgenda();
-    renderFocus(false);
-    refreshNotesPreview();
-    if (document.getElementById('workPanel')?.classList.contains('show')) {
-      renderActions();
-    }
+    try { renderMeetingHeader(); } catch(e) {}
+    try { renderAgenda(); } catch(e) {}
+    try { renderFocus(false); } catch(e) {}
+    try { refreshNotesPreview(); } catch(e) {}
+    try {
+      var wp = document.getElementById('workPanel');
+      if (wp && wp.classList.contains('show')) renderActions();
+    } catch(e) {}
   } else {
-    if (!document.getElementById('homeScreen').classList.contains('hidden')) {
-      renderHome();
-      if (typeof renderTeams === 'function') renderTeams();
+    var home = document.getElementById('homeScreen');
+    if (home && !home.classList.contains('hidden')) {
+      try { renderHome(); } catch(e) {}
+      try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
     }
   }
 }
 
-// Hook into save
-const originalSaveImmediate = saveImmediate;
-saveImmediate = () => {
-  originalSaveImmediate();
-  broadcastUpdate();
-};
+// P2P hooks removed - using Supabase Realtime
 
-const originalSave = save;
-save = () => {
-  originalSave();
-  broadcastUpdate();
-};
 
 function renderAvatars() {
   const presence = document.getElementById('userPresence');
@@ -3460,7 +3490,7 @@ function renderAvatars() {
 
 /* ========================================================================= */
 
-function createMeeting() {
+async function createMeeting() {
   const title = meetingTitleInput.value.trim() || 'Untitled meeting';
   const m = newMeeting(title, pickedISO);
   const teamVal = $('#meetingVisibility').value;
@@ -3468,11 +3498,19 @@ function createMeeting() {
   m.visibility = m.teamId ? 'team' : 'private';
   m.status = (pickedISO > todayISO()) ? 'scheduled' : 'ongoing';
   m.lastOpenedAt = new Date().toISOString();
+  m.updatedAt = new Date().toISOString();
+  // Set creator from auth
+  try {
+    if (supabaseClient) {
+      var session = await supabaseClient.auth.getSession();
+      if (session.data.session) m.createdBy = session.data.session.user.id;
+    }
+  } catch(e) {}
   state.meetings.push(m);
   state.currentId = m.id;
   saveImmediate();
-  // Save to Supabase
-  saveMeetingToSupabase(m);
+  // Save to Supabase (with await so it actually completes)
+  await saveMeetingToSupabase(m);
   // Notify team if shared
   if (m.teamId) notifyTeamOfMeeting(m.teamId, m.id, m.title);
   closeNewMeeting();
@@ -3584,6 +3622,7 @@ function renderAgenda() {
     agendaListEl.appendChild(row);
   });
   meetingMeta.textContent = m.items.length;
+  pushMeetingNow();
 }
 
 function renderFocus(animate=true) {
@@ -4106,7 +4145,7 @@ notesArea.addEventListener('input', () => {
   item.notes = notesArea.value;
   setSaveStatus('saving');
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { save(); setSaveStatus('saved'); refreshNotesPreview(); }, 350);
+  saveTimer = setTimeout(() => { save(); pushMeetingNow(); setSaveStatus('saved'); refreshNotesPreview(); }, 350);
 });
 notesArea.addEventListener('blur', refreshNotesPreview);
 limitInput.addEventListener('change', () => {
@@ -4130,7 +4169,7 @@ function addTask() {
     itemId: m.activeId,
   });
   $('#taskName').value = ''; $('#taskOwner').value = ''; $('#taskDate').value = '';
-  save(); renderActions();
+  save(); pushMeetingNow(); renderActions();
 }
 
 /* ---------- Unified workspace panel (Notes + Actions side by side) ---------- */
@@ -4667,22 +4706,41 @@ if (shareId) {
     });
   }
   
-  // Try to load from Supabase first
+  // Load meeting from Supabase
   (async function() {
     var sm = state.meetings.find(function(x) { return x.id === shareId; });
     if (!sm && supabaseClient) {
       try {
         var r = await supabaseClient.from('meetings').select('data').eq('id', shareId).single();
         if (r.data && r.data.data) {
-          sm = r.data.data;
-          state.meetings.push(normalizeMeeting(sm));
+          sm = normalizeMeeting(r.data.data);
+          // Add or replace locally
+          var idx = state.meetings.findIndex(function(x) { return x.id === sm.id; });
+          if (idx > -1) state.meetings[idx] = sm;
+          else state.meetings.push(sm);
+          state.currentId = sm.id;
           saveImmediate();
         }
-      } catch(e) {}
+      } catch(e) { console.log('Load meeting error:', e); }
     }
     var loader = document.getElementById('syncLoader');
     if (loader) loader.remove();
-    if (sm && (sm.shareEnabled || sm.visibility === 'team')) {
+    if (sm) {
+      // Subscribe to realtime before showing app
+      subscribeToMeetings(shareId, function(remoteData) {
+        var idx = state.meetings.findIndex(function(x) { return x.id === remoteData.id; });
+        if (idx > -1) {
+          if (!state.meetings[idx].updatedAt || (remoteData.updatedAt && remoteData.updatedAt > state.meetings[idx].updatedAt)) {
+            state.meetings[idx] = normalizeMeeting(remoteData);
+            saveImmediate();
+            refreshUI();
+          }
+        } else {
+          state.meetings.push(normalizeMeeting(remoteData));
+          saveImmediate();
+          refreshUI();
+        }
+      });
       showApp();
     } else {
       appEl.style.display = '';
@@ -4690,7 +4748,7 @@ if (shareId) {
       var ld = document.createElement('div');
       ld.id = 'syncLoader';
       ld.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;';
-      ld.innerHTML = '<div style="text-align:center;"><h3 style="color:var(--text);">Meeting Not Found</h3><p style="color:var(--subtle);">Ask the host to share this meeting first.</p><button class="primary-btn" onclick="window.location.href=window.location.pathname;">Go Home</button></div>';
+      ld.innerHTML = '<div style="text-align:center;"><h3 style="color:var(--text);">Meeting Not Found</h3><p style="color:var(--subtle);">The host needs to create and share this meeting first.</p><button class="primary-btn" onclick="window.location.href=window.location.pathname">Go Home</button></div>';
       document.body.appendChild(ld);
     }
   })();
@@ -4702,5 +4760,5 @@ if (shareId) {
 
 </script>
 </div><!-- /app-wrap -->
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0642fe7fab6035b',t:'MTc4MDU0NzI2Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a064532888689a44',t:'MTc4MDU0ODcxMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

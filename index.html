@@ -1,7 +1,13 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    const SUPABASE_URL = 'https://mwuucjzjenrkwqgfdzsv.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_GflvFq5PX5lOpm4GyJVOwA_E2Gb1WyP'
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  </script>
+<head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Clarify — Meeting Companion</title>
@@ -50,78 +56,6 @@
     --shadow-md: 0 4px 14px rgba(0,0,0,0.4);
     --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
   }
-
-  /* ============ AUTH STYLES ============ */
-  #auth-container {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    z-index: 99999;
-    display: flex; align-items: center; justify-content: center;
-    transition: opacity 300ms ease;
-  }
-  .auth-card {
-    width: min(100%, 400px);
-    margin: 24px;
-    padding: 36px 32px 28px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: var(--shadow-lg);
-    text-align: center;
-  }
-  .auth-card h2 {
-    font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
-    margin: 0 0 6px;
-  }
-  .auth-card .auth-sub {
-    font-size: 14px; color: var(--muted);
-    margin: 0 0 28px;
-  }
-  .auth-card form {
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  .auth-card input {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    font-size: 15px;
-    color: var(--text);
-    outline: none;
-    transition: border-color var(--t);
-  }
-  .auth-card input:focus { border-color: var(--accent); }
-  .auth-card button[type="submit"] {
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    background: var(--accent);
-    color: white;
-    font-size: 15px; font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: opacity var(--t);
-    margin-top: 4px;
-  }
-  .auth-card button[type="submit"]:hover { opacity: 0.92; }
-  .auth-card .auth-switch {
-    margin-top: 20px;
-    font-size: 13px; color: var(--muted);
-  }
-  .auth-card .auth-switch a {
-    color: var(--accent); font-weight: 500;
-    text-decoration: none; cursor: pointer;
-  }
-  .auth-card .auth-switch a:hover { text-decoration: underline; }
-  #auth-message {
-    margin-top: 12px; font-size: 13px; min-height: 20px;
-    padding: 8px 12px; border-radius: 8px;
-  }
-  #auth-message.error { color: var(--danger); background: #fef2f2; }
-  #auth-message.success { color: var(--success); background: var(--success-soft); }
-
-
 
   * { box-sizing: border-box; }
 
@@ -1758,47 +1692,6 @@
 </head>
 <body>
 
-<!-- ===================== AUTH ===================== -->
-<div id="auth-container">
-  <div class="auth-card">
-    <h2 id="auth-title">Welcome Back</h2>
-    <p class="auth-sub" id="auth-subtitle">Sign in to access your meetings</p>
-
-    <!-- Sign Up Form -->
-    <form id="signup-form" style="display:none;">
-      <input type="email" id="signup-email" placeholder="Email" required />
-      <input type="password" id="signup-password" placeholder="Password (6+ characters)" minlength="6" required />
-      <button type="submit">Sign Up</button>
-      <p class="auth-switch">
-        Already have an account?
-        <a href="#" id="show-login">Log in</a>
-      </p>
-    </form>
-
-    <!-- Login Form -->
-    <form id="login-form">
-      <input type="email" id="login-email" placeholder="Email" required />
-      <input type="password" id="login-password" placeholder="Password" required />
-      <button type="submit">Log In</button>
-      <p class="auth-switch">
-        No account yet?
-        <a href="#" id="show-signup">Sign up</a>
-      </p>
-    </form>
-
-    <div id="auth-message"></div>
-  </div>
-</div>
-
-<!-- ===================== APP (hidden until logged in) ===================== -->
-<script>
-
-<div id="app-content" style="display:none;">
-  <p style="position:fixed;top:10px;right:20px;z-index:9999;font-size:13px;color:var(--muted);">
-    <span id="user-email-display"></span>
-    <button id="logout-btn-top" style="margin-left:12px;padding:4px 10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:12px;">Log Out</button>
-  </p>
-
 <!-- ===================== HOME / LAUNCH SCREEN ===================== -->
 <div class="home intro-active" id="homeScreen">
   <div class="home-intro" id="introSplash">
@@ -1808,7 +1701,6 @@
       <p class="intro-copy">To help users plan, guide, and conclude conversations with clarity through beautifully structured, effortlessly calm workflows.</p>
     </div>
   </div>
-
 
   <div class="home-wrap">
     <div class="home-top">
@@ -2211,315 +2103,7 @@
 <div id="printRoot"></div>
 
 <script>
-/* ============================= SUPABASE CLIENT (global) ============================ */
-var SUPABASE_URL = 'https://mwuucjzjenrkwqgfdzsv.supabase.co';
-var SUPABASE_ANON_KEY = 'sb_publishable_GflvFq5PX5lOpm4GyJVOwA_E2Gb1WyP';
-var supabaseClient;
-
-(function() {
-  try {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } catch(e) {
-    console.error('Supabase init failed:', e);
-  }
-})();
-</script>
-
-<script>
-<script>
-/* ============================= AUTH UI ============================ */
-(function() {
-  // Wait for DOM
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', arguments.callee);
-    return;
-  }
-
-  var authContainer = document.getElementById('auth-container');
-  var loginForm = document.getElementById('login-form');
-  var signupForm = document.getElementById('signup-form');
-  var authTitle = document.getElementById('auth-title');
-  var authSubtitle = document.getElementById('auth-subtitle');
-  var authMessage = document.getElementById('auth-message');
-  var appContent = document.getElementById('app-content');
-  var userEmailDisplay = document.getElementById('user-email-display');
-
-  // Ensure auth is visible on load
-  if (authContainer) { authContainer.style.display = 'flex'; }
-  if (appContent) { appContent.style.display = 'none'; }
-  if (loginForm) loginForm.style.display = 'block';
-  if (signupForm) signupForm.style.display = 'none';
-
-  function showMsg(msg, isError) {
-    if (!authMessage) return;
-    authMessage.textContent = msg;
-    authMessage.style.display = 'block';
-    authMessage.style.padding = '10px 14px';
-    authMessage.style.borderRadius = '8px';
-    authMessage.style.marginTop = '12px';
-    if (isError) {
-      authMessage.style.color = '#b91c1c';
-      authMessage.style.background = '#fef2f2';
-    } else {
-      authMessage.style.color = '#15803d';
-      authMessage.style.background = '#ecfdf5';
-    }
-  }
-
-  // Toggle
-  var sl = document.getElementById('show-signup');
-  var ll = document.getElementById('show-login');
-  if (sl) sl.onclick = function(e) {
-    e.preventDefault();
-    loginForm.style.display = 'none';
-    signupForm.style.display = 'block';
-    authTitle.textContent = 'Create Account';
-    authSubtitle.textContent = 'Set up your free account';
-    authMessage.style.display = 'none';
-  };
-  if (ll) ll.onclick = function(e) {
-    e.preventDefault();
-    signupForm.style.display = 'none';
-    loginForm.style.display = 'block';
-    authTitle.textContent = 'Welcome Back';
-    authSubtitle.textContent = 'Sign in to access your meetings';
-    authMessage.style.display = 'none';
-  };
-
-  // Check Supabase
-  function getClient() {
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) return supabaseClient;
-    // Retry: maybe CDN loaded late
-    try { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
-    return supabaseClient || null;
-  }
-
-  // Signup
-  signupForm.onsubmit = function(e) {
-    e.preventDefault();
-    var client = getClient();
-    if (!client) { showMsg('App is still loading. Please wait a moment and try again.', true); return; }
-
-    var email = document.getElementById('signup-email').value.trim();
-    var password = document.getElementById('signup-password').value;
-    if (!email || !password) { showMsg('Please fill in both fields.', true); return; }
-    if (password.length < 6) { showMsg('Password must be 6+ characters.', true); return; }
-
-    showMsg('Creating account...', false);
-
-    client.auth.signUp({ email: email, password: password })
-      .then(function(r) {
-        if (r.error) { showMsg(r.error.message, true); return; }
-        if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
-          showMsg('Account exists. Please log in.', true);
-        } else {
-          showMsg('Account created! You can now log in.', false);
-          signupForm.style.display = 'none';
-          loginForm.style.display = 'block';
-          authTitle.textContent = 'Welcome Back';
-          authSubtitle.textContent = 'Sign in to access your meetings';
-          document.getElementById('login-email').value = email;
-        }
-      })
-      .catch(function(err) { showMsg('Error: ' + (err.message || 'Unknown'), true); });
-  };
-
-  // Login
-  loginForm.onsubmit = function(e) {
-    e.preventDefault();
-    var client = getClient();
-    if (!client) { showMsg('App is still loading. Please wait a moment and try again.', true); return; }
-
-    var email = document.getElementById('login-email').value.trim();
-    var password = document.getElementById('login-password').value;
-    if (!email || !password) { showMsg('Please fill in both fields.', true); return; }
-
-    showMsg('Signing in...', false);
-
-    client.auth.signInWithPassword({ email: email, password: password })
-      .then(function(r) {
-        if (r.error) { showMsg(r.error.message, true); return; }
-        // onAuthStateChange handles the rest
-      })
-      .catch(function(err) { showMsg('Error: ' + (err.message || 'Unknown'), true); });
-  };
-
-  // Logout
-  var lb = document.getElementById('logout-btn-top');
-  if (lb) lb.onclick = function() {
-    var client = getClient();
-    if (client) client.auth.signOut();
-  };
-
-  // Auth state - only if Supabase is loaded
-  setTimeout(function() {
-    var client = getClient();
-    if (!client) {
-      showMsg('Connection issue. Please refresh the page.', true);
-      return;
-    }
-    client.auth.onAuthStateChange(function(event, session) {
-      if (session && session.user) {
-        if (authContainer) authContainer.style.display = 'none';
-        if (appContent) appContent.style.display = 'block';
-        if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
-
-        // Dismiss intro after login
-        setTimeout(function() {
-          var home = document.getElementById('homeScreen');
-          if (home) home.classList.remove('intro-active');
-          var splash = document.getElementById('introSplash');
-          if (splash) splash.classList.add('hidden');
-          // Render app
-          try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
-          try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
-        }, 600);
-      } else {
-        if (authContainer) authContainer.style.display = 'flex';
-        if (appContent) appContent.style.display = 'none';
-        if (loginForm) loginForm.style.display = 'block';
-        if (signupForm) signupForm.style.display = 'none';
-        if (authTitle) authTitle.textContent = 'Welcome Back';
-        if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
-        if (authMessage) authMessage.style.display = 'none';
-      }
-    });
-  }, 200);
-
-})();
-</script></script>
-
-<script>
-/* ============================= SUPABASE DATA LAYER ============================ */
-/* ---- Teams ---- */
-async function loadTeamsFromSupabase() {
-  if (!supabaseClient) return [];
-  var result = await supabaseClient.from('organization_members').select('org_id, role, organizations(id, name, description, created_by)').order('joined_at');
-  if (result.error) { console.error('loadTeams:', result.error); return []; }
-  var teams = [];
-  var seen = {};
-  (result.data || []).forEach(function(row) {
-    if (row.organizations && !seen[row.organizations.id]) {
-      seen[row.organizations.id] = true;
-      teams.push({
-        id: row.organizations.id,
-        name: row.organizations.name,
-        description: row.organizations.description || '',
-        role: row.role,
-        members: []
-      });
-    }
-  });
-  // Load members for each team
-  for (var i = 0; i < teams.length; i++) {
-    var mr = await supabaseClient.from('organization_members').select('user_id, role').eq('org_id', teams[i].id);
-    if (!mr.error) {
-      teams[i].members = (mr.data || []).map(function(m) { return { email: m.user_id, role: m.role }; });
-    }
-  }
-  return teams;
-}
-
-async function saveTeamToSupabase(team) {
-  // Upsert organization
-  await supabaseClient.from('organizations').upsert({ id: team.id, name: team.name, description: team.description || '' });
-  // Delete old members and re-insert (simple approach)
-  await supabaseClient.from('organization_members').delete().eq('org_id', team.id);
-  if (team.members && team.members.length) {
-    var insertRows = team.members.map(function(m) { return { org_id: team.id, user_id: m.email, role: m.role }; });
-    await supabaseClient.from('organization_members').insert(insertRows);
-  }
-}
-
-async function deleteTeamFromSupabase(teamId) {
-  await supabaseClient.from('organizations').delete().eq('id', teamId);
-}
-
-/* ---- Meetings ---- */
-async function saveMeetingToSupabase(m) {
-  if (!supabaseClient) return;
-  var session = await supabaseClient.auth.getSession();
-  var userId = session.data.session ? session.data.session.user.id : null;
-  await supabaseClient.from('meetings').upsert({
-    id: m.id,
-    title: m.title,
-    date: m.date,
-    status: m.status,
-    data: JSON.parse(JSON.stringify(m)),
-    org_id: m.teamId || null,
-    created_by: m.createdBy || userId,
-    updated_at: new Date().toISOString()
-  });
-}
-
-async function loadMeetingsFromSupabase() {
-  if (!supabaseClient) return [];
-  var result = await supabaseClient.from('meetings').select('data').order('updated_at', { ascending: false }).limit(200);
-  if (result.error) { console.error('loadMeetings:', result.error); return []; }
-  return (result.data || []).map(function(r) { return r.data; });
-}
-
-async function deleteMeetingFromSupabase(id) {
-  await supabaseClient.from('meetings').delete().eq('id', id);
-}
-
-/* ---- Realtime Sync ---- */
-var realtimeChannel = null;
-function subscribeToMeetings(meetingId, onUpdate) {
-  if (!supabaseClient) return;
-  if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); }
-  realtimeChannel = supabaseClient
-    .channel('meeting-' + meetingId)
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'meetings', filter: 'id=eq.' + meetingId }, function(payload) {
-      if (payload.new && payload.new.data) {
-        onUpdate(payload.new.data);
-      }
-    })
-    .subscribe();
-}
-
-function unsubscribeFromMeetings() {
-  if (realtimeChannel) {
-    supabaseClient.removeChannel(realtimeChannel);
-    realtimeChannel = null;
-  }
-}
-
-/* ---- Sync teams to localStorage on login ---- */
-async function syncAllFromSupabase() {
-  if (!supabaseClient) { console.warn('syncAllFromSupabase: supabaseClient not ready'); return; }
-  try {
-    var teams = await loadTeamsFromSupabase();
-    state.teams = teams;
-    var meetings = await loadMeetingsFromSupabase();
-    if (meetings.length) {
-      // Merge with local meetings (keep local if newer)
-      var localMap = {};
-      state.meetings.forEach(function(m) { localMap[m.id] = m; });
-      meetings.forEach(function(m) {
-        if (localMap[m.id]) {
-          // Keep the one with later lastOpenedAt
-          var localM = localMap[m.id];
-          if (!localM.lastOpenedAt || (m.lastOpenedAt && m.lastOpenedAt > localM.lastOpenedAt)) {
-            localMap[m.id] = m;
-          }
-        } else {
-          localMap[m.id] = m;
-        }
-      });
-      state.meetings = Object.values(localMap).map(normalizeMeeting);
-    }
-    saveImmediate();
-    return true;
-  } catch(e) {
-    console.error('syncAllFromSupabase:', e);
-    return false;
-  }
-}
-
 /* ============================= STATE / STORAGE ============================ */
-
-
 const STORAGE_KEY = 'facilitate.v4';
 const LEGACY_KEYS = ['facilitate.v3','facilitate.v2','facilitate.v1'];
 const STATUSES = ['ongoing','done','abandoned'];     // task statuses
@@ -2636,22 +2220,16 @@ function computeAutoStatus(m) {
 
 
 
-var save = (function() {
-  var t;
-  return function() {
+let save = (() => {
+  let t; return () => {
     clearTimeout(t);
-    t = setTimeout(function() {
+    t = setTimeout(() => {
       setStorage(JSON.stringify(state));
-      // Also save current meeting to Supabase
-      var m = cm();
-      if (m) saveMeetingToSupabase(m);
     }, 150);
   };
 })();
-var saveImmediate = function() {
+let saveImmediate = () => {
   setStorage(JSON.stringify(state));
-  var m = cm();
-  if (m) saveMeetingToSupabase(m);
 };
 
 function cm() { return state.meetings.find(m => m.id === state.currentId); }
@@ -2748,8 +2326,10 @@ let introDismissed = false;
 let introTimer = null;
 
 function dismissIntro() {
+  if (introDismissed) return;
   introDismissed = true;
-  if (homeEl) homeEl.classList.remove('intro-active');
+  homeEl.classList.remove('intro-active');
+  introSplash?.classList.add('hidden');
 }
 
 function meetingRowHTML(m) {
@@ -2835,7 +2415,6 @@ function renderHome() {
 function showHome() {
   pauseSession();
   if (timerInt) { clearInterval(timerInt); timerInt = null; }
-  unsubscribeFromMeetings();
   appEl.style.display = 'none';
   homeEl.classList.remove('hidden');
   state.currentId = null;
@@ -2848,30 +2427,15 @@ function showApp() {
   renderMeetingHeader();
   renderAgenda();
   renderFocus(false);
-  var m = cm();
+  // Auto-start the meeting session timer (unless meeting is already done)
+  const m = cm();
   if (m && m.status !== 'done') startSession();
   else updateTimer();
   if (!timerInt) timerInt = setInterval(updateTimer, 1000);
   
-  // Subscribe to realtime updates for this meeting
-  if (m && supabaseClient) {
-    subscribeToMeetings(m.id, function(remoteData) {
-      // Update local state from remote
-      var idx = state.meetings.findIndex(function(x) { return x.id === remoteData.id; });
-      if (idx > -1) {
-        var localM = state.meetings[idx];
-        // Only accept remote if it's newer
-        if (!localM.updatedAt || (remoteData.updatedAt && remoteData.updatedAt > localM.updatedAt)) {
-          state.meetings[idx] = normalizeMeeting(remoteData);
-          saveImmediate();
-          refreshUI();
-        }
-      } else {
-        state.meetings.push(normalizeMeeting(remoteData));
-        saveImmediate();
-        refreshUI();
-      }
-    });
+  const isHost = !new URLSearchParams(window.location.search).get('id');
+  if (m && isHost && m.shareEnabled) {
+    initP2P(m, true);
   }
 }
 
@@ -2886,8 +2450,7 @@ groupsEl.addEventListener('click', e => {
     if (!m) return;
     if (act === 'delete') {
       if (confirm('Delete meeting "'+(m.title||'Untitled')+'"?')) {
-        state.meetings = state.meetings.filter(function(x) { return x.id !== id; });
-        deleteMeetingFromSupabase(id);
+        state.meetings = state.meetings.filter(x => x.id !== id);
         saveImmediate(); renderHome();
       }
     } else if (act === 'reopen') {
@@ -3002,52 +2565,25 @@ $('#createMeetingBtn').addEventListener('click', createMeeting);
 let currentTeamMembers = [];
 let editingTeamId = null;
 
-var renderTeamsPending = false;
 function renderTeams() {
-  var list = $('#teamList');
-  if (!list) return;
+  const list = $('#teamList');
   if (!state.teams || !state.teams.length) {
-    list.innerHTML = '<div class="empty-state"><h3>No teams yet</h3><p>Create a team to start sharing meetings and collaborating.</p></div>';
+    list.innerHTML = `
+      <div class="empty-state">
+        <h3>No teams yet</h3>
+        <p>Create a team to start sharing meetings and collaborating.</p>
+      </div>`;
     return;
   }
-  list.innerHTML = state.teams.map(function(t) {
-    var roleBadge = t.role ? '<span style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);padding:2px 6px;background:var(--accent-soft);border-radius:4px;">' + t.role + '</span>' : '';
-    var teamMeetings = state.meetings.filter(function(m) { return m.teamId === t.id; });
-    return '<div class="team-card" data-id="' + t.id + '">' +
-      '<div class="team-name">' + escapeHTML(t.name) + ' ' + roleBadge + '</div>' +
-      (t.description ? '<div class="team-desc">' + escapeHTML(t.description) + '</div>' : '') +
-      '<div class="team-meta">' +
-        '<span>👥 ' + (t.members ? t.members.length : 0) + ' member' + ((t.members && t.members.length === 1) ? '' : 's') + '</span>' +
-        '<span>📋 ' + teamMeetings.length + ' meeting' + (teamMeetings.length === 1 ? '' : 's') + '</span>' +
-      '</div>' +
-      '<div style="margin-top:10px;display:flex;gap:6px;">' +
-        '<button class="ghost-btn new-meeting-team" data-team-id="' + t.id + '" style="padding:5px 10px;font-size:12px;">+ New Meeting</button>' +
-        '<button class="ghost-btn edit-team-btn" data-team-id="' + t.id + '" style="padding:5px 10px;font-size:12px;">⚙ Edit</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-  // Wire up "New Meeting" buttons
-  list.querySelectorAll('.new-meeting-team').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      pickedISO = todayISO();
-      populateVisibilityDropdown();
-      $('#meetingVisibility').value = btn.dataset.teamId;
-      var t = new Date();
-      calView = { year: t.getFullYear(), month: t.getMonth() };
-      meetingTitleInput.value = '';
-      setPicked(pickedISO);
-      modal.classList.add('show');
-      trapFocus(modal, meetingTitleInput);
-    });
-  });
-  // Wire up "Edit" buttons
-  list.querySelectorAll('.edit-team-btn').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      openEditTeam(btn.dataset.teamId);
-    });
-  });
+  list.innerHTML = state.teams.map(t => `
+    <div class="team-card" data-id="${t.id}">
+      <div class="team-name">${escapeHTML(t.name)}</div>
+      ${t.description ? `<div class="team-desc">${escapeHTML(t.description)}</div>` : ''}
+      <div class="team-meta">
+        <span>👥 ${t.members.length} member${t.members.length===1?'':'s'}</span>
+      </div>
+    </div>
+  `).join('');
 }
 
 $$('#homeTabs .tab').forEach(tab => {
@@ -3153,26 +2689,27 @@ $('#teamEmailInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); $('#addMemberBtn').click(); }
 });
 
-$('#saveTeamBtn').addEventListener('click', function() {
-  var name = $('#teamNameInput').value.trim();
+$('#saveTeamBtn').addEventListener('click', () => {
+  const name = $('#teamNameInput').value.trim();
   if (!name) return alert('Team name is required');
   
   state.teams = state.teams || [];
-  var team;
   if (editingTeamId) {
-    team = state.teams.find(function(x) { return x.id === editingTeamId; });
-    if (team) {
-      team.name = name;
-      team.description = $('#teamDescInput').value.trim();
-      team.members = currentTeamMembers;
+    const t = state.teams.find(x => x.id === editingTeamId);
+    if (t) {
+      t.name = name;
+      t.description = $('#teamDescInput').value.trim();
+      t.members = currentTeamMembers;
     }
   } else {
-    team = { id: uid(), name: name, description: $('#teamDescInput').value.trim(), members: currentTeamMembers, role: 'owner' };
-    state.teams.push(team);
+    state.teams.push({
+      id: uid(),
+      name,
+      description: $('#teamDescInput').value.trim(),
+      members: currentTeamMembers
+    });
   }
   saveImmediate();
-  // Save to Supabase
-  if (team) saveTeamToSupabase(team);
   $('#teamModal').classList.remove('show');
   renderTeams();
   populateVisibilityDropdown();
@@ -3214,41 +2751,26 @@ $('#shareVisibility')?.addEventListener('change', (e) => {
   saveImmediate();
   renderMeetingHeader();
 });
-$('#shareToggle')?.addEventListener('change', function(e) {
-  var m = cm(); if(!m) return;
+$('#shareToggle')?.addEventListener('change', (e) => {
+  const m = cm(); if(!m) return;
   m.shareEnabled = e.target.checked;
-  m.updatedAt = new Date().toISOString();
   saveImmediate();
-  saveMeetingToSupabase(m);
   updateShareLinks(m);
   renderMeetingHeader();
-  // Subscribe to realtime sync for this meeting
   if (m.shareEnabled) {
-    subscribeToMeetings(m.id, function(remoteData) {
-      var idx = state.meetings.findIndex(function(x) { return x.id === remoteData.id; });
-      if (idx > -1) {
-        var localM = state.meetings[idx];
-        if (!localM.updatedAt || (remoteData.updatedAt && remoteData.updatedAt > localM.updatedAt)) {
-          state.meetings[idx] = normalizeMeeting(remoteData);
-          saveImmediate();
-          refreshUI();
-        }
-      }
-    });
+    initP2P(m, true);
   } else {
-    unsubscribeFromMeetings();
+    if (peer) { peer.destroy(); peer = null; p2pConns = []; }
   }
 });
 function updateShareLinks(m) {
-  var container = $('#shareLinksContainer');
+  const container = $('#shareLinksContainer');
   if (!container) return;
   if (m.shareEnabled) {
     container.style.display = 'flex';
-    var baseUrl = window.location.origin + window.location.pathname;
+    const baseUrl = window.location.origin + window.location.pathname;
     $('#collabLinkInput').value = baseUrl + '?id=' + m.id + '&role=editor';
     $('#viewerLinkInput').value = baseUrl + '?id=' + m.id + '&role=viewer';
-    // Also save to Supabase so shared users can load it
-    saveMeetingToSupabase(m);
   } else {
     container.style.display = 'none';
   }
@@ -3264,20 +2786,149 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 
 
 
-// P2P removed - using Supabase Realtime for sync
-// All P2P functions (initP2P, handleIncomingUpdate, broadcastUpdate, refreshUI, renderAvatars) are now handled by the Supabase data layer
+// ==================== P2P INTERNET SYNC (PeerJS) ====================
+let peer = null;
+let p2pConns = [];
+let hostConn = null;
 
-function renderAvatars() {
-  // Placeholder - no longer using P2P avatars
-  var presence = document.getElementById('userPresence');
-  if (presence) presence.style.display = 'none';
+
+const PEER_CONFIG = {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' }
+    ]
+  }
+};
+
+function initP2P(m, isHost) {
+  if (typeof Peer === 'undefined') {
+    setTimeout(() => initP2P(m, isHost), 200);
+    return;
+  }
+  
+  if (!window.RTCPeerConnection) {
+    alert("Warning: Your browser or app (like Messenger) is blocking Live Sync. Please open this link in standard Safari or Chrome.");
+  }
+  
+  if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
+  
+  if (isHost && m.shareEnabled) {
+    peer = new Peer('clarify-' + m.id, PEER_CONFIG);
+    
+    peer.on('error', (err) => {
+      console.warn("PeerJS Host Error:", err);
+      // If the ID is trapped by a ghost session, we try to aggressively reconnect it.
+      if (err.type === 'unavailable-id') {
+        setTimeout(() => {
+          if (peer && peer.destroyed === false) peer.reconnect();
+        }, 2000);
+      }
+    });
+    
+    peer.on('connection', (conn) => {
+      p2pConns.push(conn);
+      conn.on('open', () => { renderAvatars(); });
+      conn.on('data', (data) => {
+        if (data.type === 'REQUEST_STATE') {
+          conn.send({ type: 'STATE_PAYLOAD', meeting: cm() });
+        }
+        if (data.type === 'UPDATE' && data.state) {
+          handleIncomingUpdate(data.state);
+          // Bounce to other connected viewers
+          p2pConns.forEach(c => { if(c !== conn && c.open) c.send(data); });
+        }
+      });
+      conn.on('close', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
+      conn.on('error', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
+    });
+  } else if (!isHost) {
+    peer = new Peer(PEER_CONFIG);
+    
+    peer.on('error', (err) => {
+      console.warn("PeerJS Viewer Error:", err);
+    });
+    
+    peer.on('open', () => {
+      hostConn = peer.connect('clarify-' + m.id, { reliable: true });
+      
+      const syncTimeout = setTimeout(() => {
+        const loader = document.getElementById('syncLoader');
+        if (loader) {
+          loader.innerHTML = `<div style="max-width:400px;text-align:center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <h3 style="color:var(--text);margin:0 0 8px;">Connection Failed</h3>
+            <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">We couldn't reach the meeting Host.</p>
+            <div style="background:var(--surface-2);padding:12px;border-radius:8px;font-size:13px;text-align:left;color:var(--text);margin-bottom:20px;">
+              <strong>Troubleshooting:</strong><br>
+              1. Ensure the Host has the meeting tab open right now.<br>
+              2. <strong>In-app browsers (like Messenger) block syncing.</strong> Please tap the menu (•••) and select "Open in Safari" or "Open in Chrome".
+            </div>
+            <button class="primary-btn" onclick="window.location.search='';">Go to Home</button>
+          </div>`;
+        }
+      }, 8000); // 8 second timeout
+
+      hostConn.on('open', () => {
+        hostConn.send({ type: 'REQUEST_STATE', id: m.id });
+        renderAvatars();
+      });
+      hostConn.on('data', (data) => {
+        if (data.type === 'STATE_PAYLOAD') {
+          clearTimeout(syncTimeout);
+          const idx = state.meetings.findIndex(x => x.id === data.meeting.id);
+          if (idx > -1) state.meetings[idx] = data.meeting;
+          else state.meetings.push(data.meeting);
+          originalSaveImmediate();
+          refreshUI();
+        }
+        if (data.type === 'UPDATE' && data.state) {
+          handleIncomingUpdate(data.state);
+        }
+      });
+      hostConn.on('close', () => {
+        clearTimeout(syncTimeout);
+        renderAvatars();
+        const loader = document.getElementById('syncLoader');
+        if (loader) loader.textContent = 'Host disconnected. Meeting is offline.';
+      });
+      hostConn.on('error', () => {
+        clearTimeout(syncTimeout);
+        renderAvatars();
+      });
+    });
+  }
+}
+
+function handleIncomingUpdate(incomingState) {
+  state = Object.assign(state, incomingState);
+  state.meetings = (state.meetings || []).map(normalizeMeeting);
+  originalSaveImmediate();
+  refreshUI();
+}
+
+function broadcastUpdate() {
+  const payload = { type: 'UPDATE', state: state };
+  if (hostConn && hostConn.open) {
+    hostConn.send(payload);
+  } else {
+    p2pConns.forEach(c => { if(c.open) c.send(payload); });
+  }
 }
 
 function refreshUI() {
-  // Simple refresh for Supabase realtime updates
+  const loader = document.getElementById('syncLoader');
+  if (loader) {
+    loader.remove();
+    showApp(); 
+    return;
+  }
+  
+  appEl.style.display = '';
   if (state.currentId) {
-    var m = state.meetings.find(function(x) { return x.id === state.currentId; });
+    const m = state.meetings.find(x => x.id === state.currentId);
     if (!m) { showHome(); return; }
+    
     renderMeetingHeader();
     renderAgenda();
     renderFocus(false);
@@ -3293,7 +2944,18 @@ function refreshUI() {
   }
 }
 
-// P2P hooks removed - using Supabase Realtime instead
+// Hook into save
+const originalSaveImmediate = saveImmediate;
+saveImmediate = () => {
+  originalSaveImmediate();
+  broadcastUpdate();
+};
+
+const originalSave = save;
+save = () => {
+  originalSave();
+  broadcastUpdate();
+};
 
 function renderAvatars() {
   const presence = document.getElementById('userPresence');
@@ -3334,26 +2996,18 @@ function renderAvatars() {
 
 /* ========================================================================= */
 
-async function createMeeting(teamIdOverride) {
-  var title = meetingTitleInput.value.trim() || 'Untitled meeting';
-  var m = newMeeting(title, pickedISO);
-  var teamVal = teamIdOverride || $('#meetingVisibility').value;
+function createMeeting() {
+  const title = meetingTitleInput.value.trim() || 'Untitled meeting';
+  const m = newMeeting(title, pickedISO);
+  const teamVal = $('#meetingVisibility').value;
   m.teamId = teamVal === 'private' ? null : teamVal;
   m.visibility = m.teamId ? 'team' : 'private';
+  // initial status: scheduled if future, else ongoing
   m.status = (pickedISO > todayISO()) ? 'scheduled' : 'ongoing';
   m.lastOpenedAt = new Date().toISOString();
-
-  // Set createdBy from current user
-  try {
-    var session = await supabaseClient.auth.getSession();
-    if (session.data.session) m.createdBy = session.data.session.user.id;
-  } catch(e) {}
-
   state.meetings.push(m);
   state.currentId = m.id;
   saveImmediate();
-  // Save to Supabase too
-  saveMeetingToSupabase(m);
   closeNewMeeting();
   showApp();
 }
@@ -4101,8 +3755,9 @@ document.addEventListener('keydown', e => {
   // Home screen: require clicking the intro CTA before proceeding
   if (!homeEl.classList.contains('hidden')) {
     if (!introDismissed) {
-      // Auto-dismiss intro on any key press
-      dismissIntro();
+      
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); openShortcuts(); }
+      return;
     }
     if (e.key === 'Escape') {
       if (modal.classList.contains('show')) closeNewMeeting();
@@ -4517,68 +4172,38 @@ function slug(s) { return (s||'untitled').toLowerCase().replace(/[^a-z0-9]+/g,'-
 
 /* ================================ BOOT =================================== */
 applyTheme();
-// introTimer removed - app starts interactive
+introTimer = setTimeout(() => dismissIntro(), 3000);
 
 const urlParams = new URLSearchParams(window.location.search);
 const shareId = urlParams.get('id');
 const userRole = urlParams.get('role');
 
 if (shareId) {
+  // If sharing is opened, we will request data via BroadcastChannel if missing locally
   state.currentId = shareId;
   introDismissed = true;
   homeEl.classList.remove('intro-active');
-  if (introSplash) introSplash.classList.add('hidden');
+  introSplash?.classList.add('hidden');
   
   if (userRole === 'viewer' || userRole === 'editor') {
     document.body.classList.toggle('role-viewer', userRole === 'viewer');
+    initP2P({ id: shareId }, false);
   }
-
-  // Try to load the meeting from Supabase
-  (async function() {
-    var sm = state.meetings.find(function(x) { return x.id === shareId; });
-    if (!sm && supabaseClient) {
-      // Load from Supabase
-      var result = await supabaseClient.from('meetings').select('data').eq('id', shareId).single();
-      if (result.data && result.data.data) {
-        sm = result.data.data;
-        state.meetings.push(normalizeMeeting(sm));
-        saveImmediate();
-      }
-    }
-
-    // Remove loader if it exists
-    var loader = document.getElementById('syncLoader');
-    if (loader) loader.remove();
-
-    if (sm) {
-      if (sm.shareEnabled || sm.visibility === 'team') {
-        // Subscribe to realtime
-        subscribeToMeetings(shareId, function(remoteData) {
-          var idx = state.meetings.findIndex(function(x) { return x.id === remoteData.id; });
-          if (idx > -1) {
-            var localM = state.meetings[idx];
-            if (!localM.updatedAt || (remoteData.updatedAt && remoteData.updatedAt > localM.updatedAt)) {
-              state.meetings[idx] = normalizeMeeting(remoteData);
-              saveImmediate();
-              refreshUI();
-            }
-          }
-        });
-        showApp();
-      } else {
-        showHome();
-      }
-    } else {
-      // Show loader with message
-      appEl.style.display = '';
-      homeEl.classList.add('hidden');
-      var loaderDiv = document.createElement('div');
-      loaderDiv.id = 'syncLoader';
-      loaderDiv.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;';
-      loaderDiv.innerHTML = '<div style="text-align:center;max-width:400px;"><h3 style="color:var(--text);">Meeting Not Found</h3><p style="color:var(--subtle);">This meeting link appears to be invalid or the host has not shared it yet. Ask the host to share the meeting first.</p><button class="primary-btn" onclick="window.location.search='';" style="margin-top:16px;">Go to Home</button></div>';
-      document.body.appendChild(loaderDiv);
-    }
-  })();
+  
+  const sm = state.meetings.find(x => x.id === shareId);
+  if (sm && sm.shareEnabled) {
+    showApp();
+  } else {
+    // If not found locally, we wait a moment for the broadcast channel to sync it.
+    // If it never arrives, it just stays blank or we can show an empty state.
+    appEl.style.display = '';
+    homeEl.classList.add('hidden');
+    const loader = document.createElement('div');
+    loader.id = 'syncLoader';
+    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;color:var(--subtle);';
+    loader.textContent = 'Waiting for host to sync meeting data...';
+    document.body.appendChild(loader);
+  }
 } else {
   state.currentId = null;
   saveImmediate();
@@ -4586,6 +4211,5 @@ if (shareId) {
 }
 
 </script>
-</div><!-- /app-content -->
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a063c7d41b6784f9',t:'MTc4MDU0MzAwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a063d996e89cd671',t:'MTc4MDU0MzczMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

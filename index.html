@@ -121,6 +121,9 @@
   #auth-message.error { color: var(--danger); background: #fef2f2; }
   #auth-message.success { color: var(--success); background: var(--success-soft); }
 
+  /* KILL INTRO CLICK BLOCK - intro-active disables pointer events, undo it */  
+  .home.intro-active .home-wrap { pointer-events: auto !important; }
+
 
   * { box-sizing: border-box; }
 
@@ -1790,6 +1793,34 @@
 </div>
 
 <!-- ===================== APP (hidden until logged in) ===================== -->
+<script>
+// FORCE INTRO DISMISS: poll until app-content is visible, then nuke intro
+(function() {
+  var killed = false;
+  var timer = setInterval(function() {
+    var ac = document.getElementById('app-content');
+    if (!ac) return;
+    if (ac.style.display !== 'none' && !killed) {
+      killed = true;
+      clearInterval(timer);
+      // Nuke the intro
+      var s = document.getElementById('introSplash');
+      var h = document.getElementById('homeScreen');
+      if (s) { s.classList.add('hidden'); try { s.style.display = 'none'; } catch(e) {} }
+      if (h) { h.classList.remove('intro-active'); }
+      // Directly fix the home-wrap
+      var w = document.querySelector('.home-wrap');
+      if (w) {
+        w.style.pointerEvents = 'auto';
+        w.style.opacity = '1';
+        w.style.filter = 'none';
+        w.style.transform = 'none';
+      }
+      console.log('Intro nuked, app clickable');
+    }
+  }, 100);
+})();
+</script>
 <div id="app-content" style="display:none;">
   <p style="position:fixed;top:10px;right:20px;z-index:9999;font-size:13px;color:var(--muted);">
     <span id="user-email-display"></span>
@@ -2332,18 +2363,30 @@ function startAuth() {
         if (authContainer) authContainer.style.display = 'none';
         if (appContent) appContent.style.display = '';
 
-        // Dismiss intro so app is usable
-        var splash = document.getElementById('introSplash');
-        var home = document.getElementById('homeScreen');
-        if (splash) splash.classList.add('hidden');
-        if (home) home.classList.remove('intro-active');
+        // Nuke intro immediately
+        (function killIntro() {
+          var s = document.getElementById('introSplash');
+          var h = document.getElementById('homeScreen');
+          if (s) { s.classList.add('hidden'); s.style.display = 'none'; }
+          if (h) { h.classList.remove('intro-active'); }
+          var w = document.querySelector('.home-wrap');
+          if (w) { w.style.pointerEvents = 'auto'; w.style.opacity = '1'; w.style.filter = 'none'; w.style.transform = 'none'; }
+        })();
 
         if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+        var synced = false;
         if (typeof syncAllFromSupabase === 'function') {
           syncAllFromSupabase().then(function() {
             if (typeof renderHome === 'function') renderHome();
             if (typeof renderTeams === 'function') renderTeams();
+          }).catch(function() {
+            if (typeof renderHome === 'function') renderHome();
+            if (typeof renderTeams === 'function') renderTeams();
           });
+        } else {
+          // Fallback: render directly
+          if (typeof renderHome === 'function') renderHome();
+          if (typeof renderTeams === 'function') renderTeams();
         }
       } else {
         if (authContainer) authContainer.style.display = '';
@@ -3236,149 +3279,20 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 
 
 
-// ==================== P2P INTERNET SYNC (PeerJS) ====================
-let peer = null;
-let p2pConns = [];
-let hostConn = null;
+// P2P removed - using Supabase Realtime for sync
+// All P2P functions (initP2P, handleIncomingUpdate, broadcastUpdate, refreshUI, renderAvatars) are now handled by the Supabase data layer
 
-
-const PEER_CONFIG = {
-  config: {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:global.stun.twilio.com:3478' }
-    ]
-  }
-};
-
-function initP2P(m, isHost) {
-  if (typeof Peer === 'undefined') {
-    setTimeout(() => initP2P(m, isHost), 200);
-    return;
-  }
-  
-  if (!window.RTCPeerConnection) {
-    alert("Warning: Your browser or app (like Messenger) is blocking Live Sync. Please open this link in standard Safari or Chrome.");
-  }
-  
-  if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
-  
-  if (isHost && m.shareEnabled) {
-    peer = new Peer('clarify-' + m.id, PEER_CONFIG);
-    
-    peer.on('error', (err) => {
-      console.warn("PeerJS Host Error:", err);
-      // If the ID is trapped by a ghost session, we try to aggressively reconnect it.
-      if (err.type === 'unavailable-id') {
-        setTimeout(() => {
-          if (peer && peer.destroyed === false) peer.reconnect();
-        }, 2000);
-      }
-    });
-    
-    peer.on('connection', (conn) => {
-      p2pConns.push(conn);
-      conn.on('open', () => { renderAvatars(); });
-      conn.on('data', (data) => {
-        if (data.type === 'REQUEST_STATE') {
-          conn.send({ type: 'STATE_PAYLOAD', meeting: cm() });
-        }
-        if (data.type === 'UPDATE' && data.state) {
-          handleIncomingUpdate(data.state);
-          // Bounce to other connected viewers
-          p2pConns.forEach(c => { if(c !== conn && c.open) c.send(data); });
-        }
-      });
-      conn.on('close', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
-      conn.on('error', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
-    });
-  } else if (!isHost) {
-    peer = new Peer(PEER_CONFIG);
-    
-    peer.on('error', (err) => {
-      console.warn("PeerJS Viewer Error:", err);
-    });
-    
-    peer.on('open', () => {
-      hostConn = peer.connect('clarify-' + m.id, { reliable: true });
-      
-      const syncTimeout = setTimeout(() => {
-        const loader = document.getElementById('syncLoader');
-        if (loader) {
-          loader.innerHTML = `<div style="max-width:400px;text-align:center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            <h3 style="color:var(--text);margin:0 0 8px;">Connection Failed</h3>
-            <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">We couldn't reach the meeting Host.</p>
-            <div style="background:var(--surface-2);padding:12px;border-radius:8px;font-size:13px;text-align:left;color:var(--text);margin-bottom:20px;">
-              <strong>Troubleshooting:</strong><br>
-              1. Ensure the Host has the meeting tab open right now.<br>
-              2. <strong>In-app browsers (like Messenger) block syncing.</strong> Please tap the menu (•••) and select "Open in Safari" or "Open in Chrome".
-            </div>
-            <button class="primary-btn" onclick="window.location.search='';">Go to Home</button>
-          </div>`;
-        }
-      }, 8000); // 8 second timeout
-
-      hostConn.on('open', () => {
-        hostConn.send({ type: 'REQUEST_STATE', id: m.id });
-        renderAvatars();
-      });
-      hostConn.on('data', (data) => {
-        if (data.type === 'STATE_PAYLOAD') {
-          clearTimeout(syncTimeout);
-          const idx = state.meetings.findIndex(x => x.id === data.meeting.id);
-          if (idx > -1) state.meetings[idx] = data.meeting;
-          else state.meetings.push(data.meeting);
-          originalSaveImmediate();
-          refreshUI();
-        }
-        if (data.type === 'UPDATE' && data.state) {
-          handleIncomingUpdate(data.state);
-        }
-      });
-      hostConn.on('close', () => {
-        clearTimeout(syncTimeout);
-        renderAvatars();
-        const loader = document.getElementById('syncLoader');
-        if (loader) loader.textContent = 'Host disconnected. Meeting is offline.';
-      });
-      hostConn.on('error', () => {
-        clearTimeout(syncTimeout);
-        renderAvatars();
-      });
-    });
-  }
-}
-
-function handleIncomingUpdate(incomingState) {
-  state = Object.assign(state, incomingState);
-  state.meetings = (state.meetings || []).map(normalizeMeeting);
-  originalSaveImmediate();
-  refreshUI();
-}
-
-function broadcastUpdate() {
-  const payload = { type: 'UPDATE', state: state };
-  if (hostConn && hostConn.open) {
-    hostConn.send(payload);
-  } else {
-    p2pConns.forEach(c => { if(c.open) c.send(payload); });
-  }
+function renderAvatars() {
+  // Placeholder - no longer using P2P avatars
+  var presence = document.getElementById('userPresence');
+  if (presence) presence.style.display = 'none';
 }
 
 function refreshUI() {
-  const loader = document.getElementById('syncLoader');
-  if (loader) {
-    loader.remove();
-    showApp(); 
-    return;
-  }
-  
-  appEl.style.display = '';
+  // Simple refresh for Supabase realtime updates
   if (state.currentId) {
-    const m = state.meetings.find(x => x.id === state.currentId);
+    var m = state.meetings.find(function(x) { return x.id === state.currentId; });
     if (!m) { showHome(); return; }
-    
     renderMeetingHeader();
     renderAgenda();
     renderFocus(false);
@@ -3394,18 +3308,7 @@ function refreshUI() {
   }
 }
 
-// Hook into save
-const originalSaveImmediate = saveImmediate;
-saveImmediate = () => {
-  originalSaveImmediate();
-  broadcastUpdate();
-};
-
-const originalSave = save;
-save = () => {
-  originalSave();
-  broadcastUpdate();
-};
+// P2P hooks removed - using Supabase Realtime instead
 
 function renderAvatars() {
   const presence = document.getElementById('userPresence');
@@ -4213,9 +4116,8 @@ document.addEventListener('keydown', e => {
   // Home screen: require clicking the intro CTA before proceeding
   if (!homeEl.classList.contains('hidden')) {
     if (!introDismissed) {
-      
-      if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); openShortcuts(); }
-      return;
+      // Auto-dismiss intro on any key press
+      dismissIntro();
     }
     if (e.key === 'Escape') {
       if (modal.classList.contains('show')) closeNewMeeting();
@@ -4700,5 +4602,5 @@ if (shareId) {
 
 </script>
 </div><!-- /app-content -->
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a060627d2f67b178',t:'MTc4MDUwNzM5Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

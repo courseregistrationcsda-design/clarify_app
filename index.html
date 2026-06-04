@@ -55,7 +55,7 @@
   #auth-container {
     position: fixed; inset: 0;
     background: var(--bg);
-    z-index: 9999;
+    z-index: 99999;
     display: flex; align-items: center; justify-content: center;
     transition: opacity 300ms ease;
   }
@@ -2226,6 +2226,7 @@ var supabaseClient;
 </script>
 
 <script>
+<script>
 /* ============================= AUTH UI ============================ */
 (function() {
   // Wait for DOM
@@ -2243,8 +2244,11 @@ var supabaseClient;
   var appContent = document.getElementById('app-content');
   var userEmailDisplay = document.getElementById('user-email-display');
 
-  // Bail if no forms
-  if (!loginForm || !signupForm) return;
+  // Ensure auth is visible on load
+  if (authContainer) { authContainer.style.display = 'flex'; }
+  if (appContent) { appContent.style.display = 'none'; }
+  if (loginForm) loginForm.style.display = 'block';
+  if (signupForm) signupForm.style.display = 'none';
 
   function showMsg(msg, isError) {
     if (!authMessage) return;
@@ -2262,36 +2266,39 @@ var supabaseClient;
     }
   }
 
-  // Toggle signup/login links
-  var showSignup = document.getElementById('show-signup');
-  var showLogin = document.getElementById('show-login');
-
-  if (showSignup) {
-    showSignup.addEventListener('click', function(e) {
-      e.preventDefault();
-      loginForm.style.display = 'none';
-      signupForm.style.display = 'block';
-      if (authTitle) authTitle.textContent = 'Create Account';
-      if (authSubtitle) authSubtitle.textContent = 'Set up your free account';
-      if (authMessage) authMessage.style.display = 'none';
-    });
-  }
-
-  if (showLogin) {
-    showLogin.addEventListener('click', function(e) {
-      e.preventDefault();
-      signupForm.style.display = 'none';
-      loginForm.style.display = 'block';
-      if (authTitle) authTitle.textContent = 'Welcome Back';
-      if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
-      if (authMessage) authMessage.style.display = 'none';
-    });
-  }
-
-  // ======== SIGN UP ========
-  signupForm.addEventListener('submit', function(e) {
+  // Toggle
+  var sl = document.getElementById('show-signup');
+  var ll = document.getElementById('show-login');
+  if (sl) sl.onclick = function(e) {
     e.preventDefault();
-    if (!supabaseClient) { showMsg('Loading... try again', true); return; }
+    loginForm.style.display = 'none';
+    signupForm.style.display = 'block';
+    authTitle.textContent = 'Create Account';
+    authSubtitle.textContent = 'Set up your free account';
+    authMessage.style.display = 'none';
+  };
+  if (ll) ll.onclick = function(e) {
+    e.preventDefault();
+    signupForm.style.display = 'none';
+    loginForm.style.display = 'block';
+    authTitle.textContent = 'Welcome Back';
+    authSubtitle.textContent = 'Sign in to access your meetings';
+    authMessage.style.display = 'none';
+  };
+
+  // Check Supabase
+  function getClient() {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) return supabaseClient;
+    // Retry: maybe CDN loaded late
+    try { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+    return supabaseClient || null;
+  }
+
+  // Signup
+  signupForm.onsubmit = function(e) {
+    e.preventDefault();
+    var client = getClient();
+    if (!client) { showMsg('App is still loading. Please wait a moment and try again.', true); return; }
 
     var email = document.getElementById('signup-email').value.trim();
     var password = document.getElementById('signup-password').value;
@@ -2299,82 +2306,85 @@ var supabaseClient;
     if (password.length < 6) { showMsg('Password must be 6+ characters.', true); return; }
 
     showMsg('Creating account...', false);
-    supabaseClient.auth.signUp({ email: email, password: password })
-      .then(function(result) {
-        if (result.error) { showMsg(result.error.message, true); return; }
-        if (result.data.user && result.data.user.identities && result.data.user.identities.length === 0) {
+
+    client.auth.signUp({ email: email, password: password })
+      .then(function(r) {
+        if (r.error) { showMsg(r.error.message, true); return; }
+        if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
           showMsg('Account exists. Please log in.', true);
         } else {
           showMsg('Account created! You can now log in.', false);
           signupForm.style.display = 'none';
           loginForm.style.display = 'block';
-          if (authTitle) authTitle.textContent = 'Welcome Back';
-          if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
+          authTitle.textContent = 'Welcome Back';
+          authSubtitle.textContent = 'Sign in to access your meetings';
           document.getElementById('login-email').value = email;
         }
       })
-      .catch(function(err) { showMsg('Error: ' + err.message, true); });
-  });
+      .catch(function(err) { showMsg('Error: ' + (err.message || 'Unknown'), true); });
+  };
 
-  // ======== LOG IN ========
-  loginForm.addEventListener('submit', function(e) {
+  // Login
+  loginForm.onsubmit = function(e) {
     e.preventDefault();
-    if (!supabaseClient) { showMsg('Loading... try again', true); return; }
+    var client = getClient();
+    if (!client) { showMsg('App is still loading. Please wait a moment and try again.', true); return; }
 
     var email = document.getElementById('login-email').value.trim();
     var password = document.getElementById('login-password').value;
     if (!email || !password) { showMsg('Please fill in both fields.', true); return; }
 
     showMsg('Signing in...', false);
-    supabaseClient.auth.signInWithPassword({ email: email, password: password })
-      .then(function(result) {
-        if (result.error) { showMsg(result.error.message, true); return; }
-        // Success! onAuthStateChange handles the rest
+
+    client.auth.signInWithPassword({ email: email, password: password })
+      .then(function(r) {
+        if (r.error) { showMsg(r.error.message, true); return; }
+        // onAuthStateChange handles the rest
       })
-      .catch(function(err) { showMsg('Error: ' + err.message, true); });
-  });
+      .catch(function(err) { showMsg('Error: ' + (err.message || 'Unknown'), true); });
+  };
 
-  // ======== LOG OUT ========
-  var logoutBtn = document.getElementById('logout-btn-top');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', function() {
-      if (supabaseClient) supabaseClient.auth.signOut();
-    });
-  }
+  // Logout
+  var lb = document.getElementById('logout-btn-top');
+  if (lb) lb.onclick = function() {
+    var client = getClient();
+    if (client) client.auth.signOut();
+  };
 
-  // ======== AUTH STATE ========
-  supabaseClient.auth.onAuthStateChange(function(event, session) {
-    if (session && session.user) {
-      // Hide auth, show app
-      if (authContainer) authContainer.style.display = 'none';
-      if (appContent) appContent.style.display = 'block';
-      if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
-
-      // Make sure intro is dismissed so app is clickable
-      setTimeout(function() {
-        var home = document.getElementById('homeScreen');
-        if (home) home.classList.remove('intro-active');
-        var splash = document.getElementById('introSplash');
-        if (splash) splash.classList.add('hidden');
-      }, 100);
-
-      // Trigger app render
-      setTimeout(function() {
-        try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
-        try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
-      }, 500);
-
-    } else {
-      // Show auth, hide app
-      if (authContainer) authContainer.style.display = 'flex';
-      if (appContent) appContent.style.display = 'none';
-      if (loginForm) loginForm.style.display = 'block';
-      if (signupForm) signupForm.style.display = 'none';
-      if (authTitle) authTitle.textContent = 'Welcome Back';
-      if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
-      if (authMessage) authMessage.style.display = 'none';
+  // Auth state - only if Supabase is loaded
+  setTimeout(function() {
+    var client = getClient();
+    if (!client) {
+      showMsg('Connection issue. Please refresh the page.', true);
+      return;
     }
-  });
+    client.auth.onAuthStateChange(function(event, session) {
+      if (session && session.user) {
+        if (authContainer) authContainer.style.display = 'none';
+        if (appContent) appContent.style.display = 'block';
+        if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+
+        // Dismiss intro after login
+        setTimeout(function() {
+          var home = document.getElementById('homeScreen');
+          if (home) home.classList.remove('intro-active');
+          var splash = document.getElementById('introSplash');
+          if (splash) splash.classList.add('hidden');
+          // Render app
+          try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
+          try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
+        }, 600);
+      } else {
+        if (authContainer) authContainer.style.display = 'flex';
+        if (appContent) appContent.style.display = 'none';
+        if (loginForm) loginForm.style.display = 'block';
+        if (signupForm) signupForm.style.display = 'none';
+        if (authTitle) authTitle.textContent = 'Welcome Back';
+        if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
+        if (authMessage) authMessage.style.display = 'none';
+      }
+    });
+  }, 200);
 
 })();
 </script></script>
@@ -4577,5 +4587,5 @@ if (shareId) {
 
 </script>
 </div><!-- /app-content -->
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a063b6ceeba80ef8',t:'MTc4MDU0MjMwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a063c7d41b6784f9',t:'MTc4MDU0MzAwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

@@ -59,20 +59,6 @@
     display: flex; align-items: center; justify-content: center;
     transition: opacity 300ms ease;
   }
-  #auth-container[style*="display: none"],
-  #auth-container[style*="display:none"] {
-    display: none !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-  }
-  #app-content[style*="display: block"],
-  #app-content[style*="display:block"] {
-    pointer-events: auto !important;
-    visibility: visible !important;
-  }
-  /* Force all children of app-content to be clickable when visible */
-  #app-content > * { pointer-events: auto; }
   .auth-card {
     width: min(100%, 400px);
     margin: 24px;
@@ -135,8 +121,6 @@
   #auth-message.error { color: var(--danger); background: #fef2f2; }
   #auth-message.success { color: var(--success); background: var(--success-soft); }
 
-  /* KILL INTRO CLICK BLOCK - intro-active disables pointer events, undo it */  
-  .home.intro-active .home-wrap { pointer-events: auto !important; }
 
 
   * { box-sizing: border-box; }
@@ -1235,7 +1219,10 @@
     transition: transform 320ms cubic-bezier(.2,.7,.2,1), opacity 260ms ease, filter 320ms ease;
   }
   .home.intro-active .home-wrap {
-    /* intro disabled - always interactive */
+    transform: translateY(14px) scale(0.965);
+    opacity: 0.22;
+    filter: blur(14px);
+    pointer-events: none;
   }
   .home-top {
     margin-bottom: 24px;
@@ -1324,8 +1311,11 @@
   [data-theme="dark"] .home-intro {
     background: rgba(14,14,16,0.78);
   }
-  .home-intro { display: none !important; }
-  .home-intro.hidden { display: none !important; }
+  .home-intro.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
   .intro-hero {
     max-width: 760px;
     text-align: center;
@@ -1810,7 +1800,15 @@
   </p>
 
 <!-- ===================== HOME / LAUNCH SCREEN ===================== -->
-<div class="home" id="homeScreen">
+<div class="home intro-active" id="homeScreen">
+  <div class="home-intro" id="introSplash">
+    <div class="intro-hero">
+      <h1 class="intro-title">Clarify</h1>
+      <p class="intro-tagline">Where meetings find focus.</p>
+      <p class="intro-copy">To help users plan, guide, and conclude conversations with clarity through beautifully structured, effortlessly calm workflows.</p>
+    </div>
+  </div>
+
 
   <div class="home-wrap">
     <div class="home-top">
@@ -2229,15 +2227,13 @@ var supabaseClient;
 
 <script>
 /* ============================= AUTH UI ============================ */
-(function initAuth() {
+(function() {
+  // Wait for DOM
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAuth);
+    document.addEventListener('DOMContentLoaded', arguments.callee);
     return;
   }
-  startAuth();
-})();
 
-function startAuth() {
   var authContainer = document.getElementById('auth-container');
   var loginForm = document.getElementById('login-form');
   var signupForm = document.getElementById('signup-form');
@@ -2247,13 +2243,17 @@ function startAuth() {
   var appContent = document.getElementById('app-content');
   var userEmailDisplay = document.getElementById('user-email-display');
 
-  function showMsg(msg, type) {
+  // Bail if no forms
+  if (!loginForm || !signupForm) return;
+
+  function showMsg(msg, isError) {
     if (!authMessage) return;
     authMessage.textContent = msg;
     authMessage.style.display = 'block';
-    authMessage.style.padding = '8px 12px';
+    authMessage.style.padding = '10px 14px';
     authMessage.style.borderRadius = '8px';
-    if (type === 'error') {
+    authMessage.style.marginTop = '12px';
+    if (isError) {
       authMessage.style.color = '#b91c1c';
       authMessage.style.background = '#fef2f2';
     } else {
@@ -2262,129 +2262,122 @@ function startAuth() {
     }
   }
 
-  // Toggle links
-  var sl = document.getElementById('show-signup');
-  var ll = document.getElementById('show-login');
-  if (sl) sl.onclick = function(e) {
-    e.preventDefault();
-    if (loginForm) loginForm.style.display = 'none';
-    if (signupForm) signupForm.style.display = 'block';
-    if (authTitle) authTitle.textContent = 'Create Account';
-    if (authSubtitle) authSubtitle.textContent = 'Set up your free account';
-    if (authMessage) authMessage.style.display = 'none';
-  };
-  if (ll) ll.onclick = function(e) {
-    e.preventDefault();
-    if (signupForm) signupForm.style.display = 'none';
-    if (loginForm) loginForm.style.display = 'block';
-    if (authTitle) authTitle.textContent = 'Welcome Back';
-    if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
-    if (authMessage) authMessage.style.display = 'none';
-  };
+  // Toggle signup/login links
+  var showSignup = document.getElementById('show-signup');
+  var showLogin = document.getElementById('show-login');
 
-  // Signup
-  if (signupForm) signupForm.onsubmit = function(e) {
-    e.preventDefault();
-    if (!supabaseClient) { showMsg('Supabase not loaded. Refresh the page.', 'error'); return false; }
+  if (showSignup) {
+    showSignup.addEventListener('click', function(e) {
+      e.preventDefault();
+      loginForm.style.display = 'none';
+      signupForm.style.display = 'block';
+      if (authTitle) authTitle.textContent = 'Create Account';
+      if (authSubtitle) authSubtitle.textContent = 'Set up your free account';
+      if (authMessage) authMessage.style.display = 'none';
+    });
+  }
 
-    var email = document.getElementById('signup-email').value.trim();
-    var password = document.getElementById('signup-password').value;
-    if (!email || !password) { showMsg('Please fill in both fields.', 'error'); return false; }
-    if (password.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return false; }
-
-    showMsg('Creating account...', 'success');
-    supabaseClient.auth.signUp({ email: email, password: password }).then(function(result) {
-      if (result.error) { showMsg(result.error.message, 'error'); return; }
-      showMsg('Account created! You can now log in below.', 'success');
+  if (showLogin) {
+    showLogin.addEventListener('click', function(e) {
+      e.preventDefault();
       signupForm.style.display = 'none';
       loginForm.style.display = 'block';
       if (authTitle) authTitle.textContent = 'Welcome Back';
       if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
-      document.getElementById('login-email').value = email;
-    }).catch(function(err) {
-      showMsg('Error: ' + (err.message || 'Unknown'), 'error');
+      if (authMessage) authMessage.style.display = 'none';
     });
-    return false;
-  };
+  }
 
-  // Login
-  if (loginForm) loginForm.onsubmit = function(e) {
+  // ======== SIGN UP ========
+  signupForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    if (!supabaseClient) { showMsg('Supabase not loaded. Refresh the page.', 'error'); return false; }
+    if (!supabaseClient) { showMsg('Loading... try again', true); return; }
+
+    var email = document.getElementById('signup-email').value.trim();
+    var password = document.getElementById('signup-password').value;
+    if (!email || !password) { showMsg('Please fill in both fields.', true); return; }
+    if (password.length < 6) { showMsg('Password must be 6+ characters.', true); return; }
+
+    showMsg('Creating account...', false);
+    supabaseClient.auth.signUp({ email: email, password: password })
+      .then(function(result) {
+        if (result.error) { showMsg(result.error.message, true); return; }
+        if (result.data.user && result.data.user.identities && result.data.user.identities.length === 0) {
+          showMsg('Account exists. Please log in.', true);
+        } else {
+          showMsg('Account created! You can now log in.', false);
+          signupForm.style.display = 'none';
+          loginForm.style.display = 'block';
+          if (authTitle) authTitle.textContent = 'Welcome Back';
+          if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
+          document.getElementById('login-email').value = email;
+        }
+      })
+      .catch(function(err) { showMsg('Error: ' + err.message, true); });
+  });
+
+  // ======== LOG IN ========
+  loginForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!supabaseClient) { showMsg('Loading... try again', true); return; }
 
     var email = document.getElementById('login-email').value.trim();
     var password = document.getElementById('login-password').value;
-    if (!email || !password) { showMsg('Please fill in both fields.', 'error'); return false; }
+    if (!email || !password) { showMsg('Please fill in both fields.', true); return; }
 
-    showMsg('Signing in...', 'success');
-    supabaseClient.auth.signInWithPassword({ email: email, password: password }).then(function(result) {
-      if (result.error) { showMsg(result.error.message, 'error'); return; }
-    }).catch(function(err) {
-      showMsg('Error: ' + (err.message || 'Unknown'), 'error');
-    });
-    return false;
-  };
+    showMsg('Signing in...', false);
+    supabaseClient.auth.signInWithPassword({ email: email, password: password })
+      .then(function(result) {
+        if (result.error) { showMsg(result.error.message, true); return; }
+        // Success! onAuthStateChange handles the rest
+      })
+      .catch(function(err) { showMsg('Error: ' + err.message, true); });
+  });
 
-  // Logout
-  var lb = document.getElementById('logout-btn-top');
-  if (lb) lb.onclick = function() {
-    if (supabaseClient) supabaseClient.auth.signOut();
-  };
-
-  // Auth state
-  if (supabaseClient) {
-    supabaseClient.auth.onAuthStateChange(function(event, session) {
-      if (session && session.user) {
-        if (authContainer) { authContainer.style.display = 'none'; authContainer.style.pointerEvents = 'none'; authContainer.style.opacity = '0'; }
-        if (appContent) { appContent.style.display = 'block'; appContent.style.pointerEvents = 'auto'; }
-
-        // Nuke intro immediately
-        (function killIntro() {
-          var s = document.getElementById('introSplash');
-          var h = document.getElementById('homeScreen');
-          if (s) { s.classList.add('hidden'); s.style.display = 'none'; }
-          if (h) { h.classList.remove('intro-active'); }
-          var w = document.querySelector('.home-wrap');
-          if (w) { w.style.pointerEvents = 'auto'; w.style.opacity = '1'; w.style.filter = 'none'; w.style.transform = 'none'; }
-        })();
-
-        if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
-        var synced = false;
-        if (typeof syncAllFromSupabase === 'function') {
-          syncAllFromSupabase().then(function() {
-            if (typeof renderHome === 'function') renderHome();
-            if (typeof renderTeams === 'function') renderTeams();
-          }).catch(function() {
-            if (typeof renderHome === 'function') renderHome();
-            if (typeof renderTeams === 'function') renderTeams();
-          });
-        } else {
-          // Fallback: render directly
-          if (typeof renderHome === 'function') renderHome();
-          if (typeof renderTeams === 'function') renderTeams();
-        }
-      } else {
-        if (authContainer) {
-          authContainer.style.display = 'flex';
-          authContainer.style.pointerEvents = 'auto';
-          authContainer.style.opacity = '1';
-          authContainer.style.zIndex = '9999';
-          authContainer.style.visibility = 'visible';
-        }
-        if (appContent) {
-          appContent.style.display = 'none';
-          appContent.style.pointerEvents = 'none';
-        }
-        if (loginForm) loginForm.style.display = 'block';
-        if (signupForm) signupForm.style.display = 'none';
-        if (authTitle) authTitle.textContent = 'Welcome Back';
-        if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
-        if (authMessage) authMessage.style.display = 'none';
-      }
+  // ======== LOG OUT ========
+  var logoutBtn = document.getElementById('logout-btn-top');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function() {
+      if (supabaseClient) supabaseClient.auth.signOut();
     });
   }
-}
-</script>
+
+  // ======== AUTH STATE ========
+  supabaseClient.auth.onAuthStateChange(function(event, session) {
+    if (session && session.user) {
+      // Hide auth, show app
+      if (authContainer) authContainer.style.display = 'none';
+      if (appContent) appContent.style.display = 'block';
+      if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+
+      // Make sure intro is dismissed so app is clickable
+      setTimeout(function() {
+        var home = document.getElementById('homeScreen');
+        if (home) home.classList.remove('intro-active');
+        var splash = document.getElementById('introSplash');
+        if (splash) splash.classList.add('hidden');
+      }, 100);
+
+      // Trigger app render
+      setTimeout(function() {
+        try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
+        try { if (typeof renderTeams === 'function') renderTeams(); } catch(e) {}
+      }, 500);
+
+    } else {
+      // Show auth, hide app
+      if (authContainer) authContainer.style.display = 'flex';
+      if (appContent) appContent.style.display = 'none';
+      if (loginForm) loginForm.style.display = 'block';
+      if (signupForm) signupForm.style.display = 'none';
+      if (authTitle) authTitle.textContent = 'Welcome Back';
+      if (authSubtitle) authSubtitle.textContent = 'Sign in to access your meetings';
+      if (authMessage) authMessage.style.display = 'none';
+    }
+  });
+
+})();
+</script></script>
 
 <script>
 /* ============================= SUPABASE DATA LAYER ============================ */
@@ -4583,40 +4576,6 @@ if (shareId) {
 }
 
 </script>
-<script>
-// Safety net: kill any remaining intro blockers
-(function(){
-  try { var h=document.getElementById('homeScreen'); if(h) h.classList.remove('intro-active'); } catch(e){}
-  try { document.querySelector('.home-wrap').style.pointerEvents='auto'; } catch(e){}
-  try { document.getElementById('introSplash').style.display='none'; } catch(e){}
-})();
-</script>
 </div><!-- /app-content -->
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>
-// FINAL FIX: make sure home is clickable after everything loads
-setTimeout(function() {
-  // Remove intro-active from home
-  var home = document.getElementById('homeScreen');
-  if (home) home.classList.remove('intro-active');
-  // Make home-wrap clickable
-  var wrap = document.querySelector('.home-wrap');
-  if (wrap) {
-    wrap.style.pointerEvents = 'auto';
-    wrap.style.opacity = '1';
-    wrap.style.filter = 'none';
-    wrap.style.transform = 'none';
-  }
-  // Hide intro splash
-  var splash = document.getElementById('introSplash');
-  if (splash) {
-    splash.classList.add('hidden');
-    splash.style.display = 'none';
-  }
-  // Clear any timers
-  try { clearTimeout(introTimer); } catch(e) {}
-  try { introDismissed = true; } catch(e) {}
-  console.log('Fix applied: home should be clickable now');
-}, 500);
-</script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a063a281ef1ddd65',t:'MTc4MDU0MTQ3Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a063b6ceeba80ef8',t:'MTc4MDU0MjMwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

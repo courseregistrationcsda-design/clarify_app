@@ -1739,6 +1739,7 @@
   body.role-viewer #openNewTeamBtn,
   body.role-viewer #topbarShareBtn { display: none !important; }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 <div id="auth-screen">
@@ -2314,6 +2315,87 @@ catch(e) { console.error('Supabase init error:', e); }
   }, 300);
 })();
 </script>
+<script>
+/* ============================= EMAIL NOTIFICATIONS (EmailJS) ============================ */
+// Sign up at https://emailjs.com (free) and replace these with your keys:
+var EMAILJS_PUBLIC_KEY = 'jn25Nm9SCytLXSkQE';      // Find in EmailJS Dashboard → Account → API Keys
+var EMAILJS_SERVICE_ID = 'service_132kxuu';      // Create in EmailJS Dashboard → Email Services
+var EMAILJS_TEMPLATE_ID = 'template_nrafawj';    // Create in EmailJS Dashboard → Email Templates
+
+var emailjsReady = false;
+// Init EmailJS once library loads
+(function initEmailJS() {
+  if (typeof emailjs !== 'undefined') {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    emailjsReady = true;
+    console.log('EmailJS ready');
+  } else {
+    setTimeout(initEmailJS, 500);
+  }
+})();
+
+// Send meeting notification to team members
+async function sendTeamMeetingEmails(teamName, meetingTitle, meetingId, memberEmails) {
+  if (!emailjsReady || !memberEmails || !memberEmails.length) {
+    console.log('EmailJS not configured, skipping emails');
+    return;
+  }
+
+  var baseUrl = window.location.origin + window.location.pathname;
+  var meetingLink = baseUrl + '?id=' + meetingId + '&role=editor';
+
+  for (var i = 0; i < memberEmails.length; i++) {
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: memberEmails[i],
+        team_name: teamName,
+        meeting_title: meetingTitle,
+        meeting_link: meetingLink,
+        meeting_id: meetingId
+      });
+      console.log('Email sent to: ' + memberEmails[i]);
+    } catch(e) {
+      console.log('Failed to send to ' + memberEmails[i] + ': ' + e.message);
+    }
+  }
+}
+
+// Store meeting notification in Supabase (always works, even without EmailJS)
+async function notifyTeamOfMeeting(teamId, meetingId, meetingTitle) {
+  if (!supabaseClient) return;
+
+  var session = await supabaseClient.auth.getSession();
+  if (!session.data.session) return;
+
+  // Get team members
+  var members = await supabaseClient.from('organization_members')
+    .select('user_id')
+    .eq('org_id', teamId);
+
+  if (members.error || !members.data) return;
+
+  // Insert notifications for each member
+  var notifications = members.data.map(function(m) {
+    return {
+      org_id: teamId,
+      user_id: m.user_id,
+      meeting_id: meetingId,
+      meeting_title: meetingTitle,
+      created_by: session.data.session.user.id,
+      read: false
+    };
+  });
+
+  await supabaseClient.from('meeting_notifications').insert(notifications);
+
+  // Also try sending emails via EmailJS
+  var team = (state.teams || []).find(function(t) { return t.id === teamId; });
+  var teamName = team ? team.name : 'Your Team';
+  var memberEmails = (team && team.members) ? team.members.map(function(m) { return m.email; }) : [];
+  sendTeamMeetingEmails(teamName, meetingTitle, meetingId, memberEmails);
+}
+</script>
+
 <script>
 /* ============================= STATE / STORAGE ============================ */
 const STORAGE_KEY = 'facilitate.v4';
@@ -4424,5 +4506,5 @@ if (shareId) {
 
 </script>
 </div><!-- /app-wrap -->
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a063e03b0b211095',t:'MTc4MDU0NDAwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a06413914a880865',t:'MTc4MDU0NjEwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

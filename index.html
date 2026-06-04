@@ -59,6 +59,20 @@
     display: flex; align-items: center; justify-content: center;
     transition: opacity 300ms ease;
   }
+  #auth-container[style*="display: none"],
+  #auth-container[style*="display:none"] {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  #app-content[style*="display: block"],
+  #app-content[style*="display:block"] {
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
+  /* Force all children of app-content to be clickable when visible */
+  #app-content > * { pointer-events: auto; }
   .auth-card {
     width: min(100%, 400px);
     margin: 24px;
@@ -1788,33 +1802,7 @@
 
 <!-- ===================== APP (hidden until logged in) ===================== -->
 <script>
-// FORCE INTRO DISMISS: poll until app-content is visible, then nuke intro
-(function() {
-  var killed = false;
-  var timer = setInterval(function() {
-    var ac = document.getElementById('app-content');
-    if (!ac) return;
-    if (ac.style.display !== 'none' && !killed) {
-      killed = true;
-      clearInterval(timer);
-      // Nuke the intro
-      var s = document.getElementById('introSplash');
-      var h = document.getElementById('homeScreen');
-      if (s) { s.classList.add('hidden'); try { s.style.display = 'none'; } catch(e) {} }
-      if (h) { h.classList.remove('intro-active'); }
-      // Directly fix the home-wrap
-      var w = document.querySelector('.home-wrap');
-      if (w) {
-        w.style.pointerEvents = 'auto';
-        w.style.opacity = '1';
-        w.style.filter = 'none';
-        w.style.transform = 'none';
-      }
-      console.log('Intro nuked, app clickable');
-    }
-  }, 100);
-})();
-</script>
+
 <div id="app-content" style="display:none;">
   <p style="position:fixed;top:10px;right:20px;z-index:9999;font-size:13px;color:var(--muted);">
     <span id="user-email-display"></span>
@@ -2347,8 +2335,8 @@ function startAuth() {
   if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange(function(event, session) {
       if (session && session.user) {
-        if (authContainer) authContainer.style.display = 'none';
-        if (appContent) appContent.style.display = '';
+        if (authContainer) { authContainer.style.display = 'none'; authContainer.style.pointerEvents = 'none'; authContainer.style.opacity = '0'; }
+        if (appContent) { appContent.style.display = 'block'; appContent.style.pointerEvents = 'auto'; }
 
         // Nuke intro immediately
         (function killIntro() {
@@ -2376,8 +2364,17 @@ function startAuth() {
           if (typeof renderTeams === 'function') renderTeams();
         }
       } else {
-        if (authContainer) authContainer.style.display = '';
-        if (appContent) appContent.style.display = 'none';
+        if (authContainer) {
+          authContainer.style.display = 'flex';
+          authContainer.style.pointerEvents = 'auto';
+          authContainer.style.opacity = '1';
+          authContainer.style.zIndex = '9999';
+          authContainer.style.visibility = 'visible';
+        }
+        if (appContent) {
+          appContent.style.display = 'none';
+          appContent.style.pointerEvents = 'none';
+        }
         if (loginForm) loginForm.style.display = 'block';
         if (signupForm) signupForm.style.display = 'none';
         if (authTitle) authTitle.textContent = 'Welcome Back';
@@ -4586,6 +4583,9 @@ if (shareId) {
 }
 
 </script>
-</div><!-- /app-content -->
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05783791a43044d',t:'MTc4MDQxNDM3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a05f480c49b408a2',t:'MTc4MDQ5NTgyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0638f34ff1784f4',t:'MTc4MDU0MDY4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+<script>
+// Safety net: kill any remaining intro blockers
+(function(){
+  try { var h=document.getElementById('homeScreen'); if(h) h.classList.remove('intro-active'); } catch(e){}
+  try { document.querySelector('.home-wrap').style.pointerEvents='auto'; } catch(e){}
+  try { document.getElementById('introSplash').style.display='none'; } catch(e){}

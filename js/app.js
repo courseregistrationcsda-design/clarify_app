@@ -98,32 +98,75 @@ document.getElementById('loginBtn')?.addEventListener('click', (e) => {
   });
 });
 
-// Forgot Password - Step 1: Send Code
-document.getElementById('sendCodeBtn')?.addEventListener('click', (e) => {
+
+let currentResetCode = null;
+
+function showAuthToast(msg, duration=5000) {
+  const toast = document.getElementById('authToast');
+  const text = document.getElementById('authToastText');
+  if(toast && text) {
+    text.innerHTML = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), duration);
+  } else {
+    alert(msg.replace(/<[^>]*>?/gm, ''));
+  }
+}
+
+async function handleSendCode(btnElement) {
   const email = document.getElementById('forgotEmail').value.trim();
   if (!email) return alert('Please enter your email address.');
   
-  const btn = e.target;
-  btn.innerHTML = 'Sending Code...';
-  btn.disabled = true;
+  btnElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Sending...';
+  btnElement.disabled = true;
   
-  // Simulate API call to Vercel/SendGrid to send recovery email
-  setTimeout(() => {
+  try {
+    const res = await fetch('/api/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      currentResetCode = data.code; // Store locally to validate
+      
+      forgotStep1.style.display = 'none';
+      forgotStep2.style.display = 'block';
+      forgotSubtitle.innerHTML = `We sent a secure code to <strong>${email}</strong>.<br>Please enter it below.`;
+      
+      if (data.mock) {
+        showAuthToast(`<strong>Demo Mode:</strong> Your reset code is <strong style="letter-spacing:2px; color:var(--accent);">${data.code}</strong><br><span style="font-size:11px; color:var(--muted);">Add RESEND_API_KEY in Vercel to email this.</span>`, 8000);
+      } else {
+        showAuthToast('Reset code sent to your email!');
+      }
+    } else {
+      alert("Failed to connect to the server.");
+    }
+  } catch (e) {
+    // Offline simulation fallback
+    currentResetCode = "123456";
     forgotStep1.style.display = 'none';
     forgotStep2.style.display = 'block';
     forgotSubtitle.innerHTML = `We sent a secure code to <strong>${email}</strong>.<br>Please enter it below.`;
-    btn.innerHTML = 'Send Reset Code';
-    btn.disabled = false;
-  }, 1500);
-});
+    showAuthToast('<strong>Offline Fallback:</strong> Your reset code is <strong style="letter-spacing:2px; color:var(--accent);">123456</strong>');
+  }
+  
+  btnElement.innerHTML = btnElement.id === 'sendCodeBtn' ? 'Send Reset Code' : 'Resend Code';
+  btnElement.disabled = false;
+}
+
+// Forgot Password - Step 1: Send Code
+document.getElementById('sendCodeBtn')?.addEventListener('click', (e) => handleSendCode(e.target));
+document.getElementById('resendCodeBtn')?.addEventListener('click', (e) => handleSendCode(e.target));
 
 // Forgot Password - Step 2: Reset & Login
 document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
   const code = document.getElementById('resetCode').value.trim();
   const newPass = document.getElementById('newPass').value.trim();
   
-  if (code.length !== 6) {
-    alert('Please enter the 6-digit code.');
+  if (code !== currentResetCode) {
+    alert('Invalid or expired reset code.');
     return;
   }
   if (newPass.length < 6) {
@@ -133,7 +176,6 @@ document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
   
   const btn = e.target;
   
-  // Use requestAnimationFrame to yield to the browser and ensure the click frame paints immediately
   requestAnimationFrame(() => {
     btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Resetting...';
     btn.disabled = true;
@@ -147,15 +189,15 @@ document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
       btn.innerHTML = 'Reset Password & Login';
       btn.disabled = false;
       
-      // Boot the app using a microtask so it doesn't block the paint of the modal closing
       queueMicrotask(() => {
         saveImmediate();
         renderHome();
       });
-    }, 2000);
+    }, 1200);
   });
 });
 
+// Logout
 // Logout
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
   localStorage.removeItem('clarify_user');
@@ -2812,46 +2854,64 @@ introTimer = setTimeout(() => dismissIntro(), 3000);
 const urlParams = new URLSearchParams(window.location.search);
 const shareId = urlParams.get('id');
 const userRole = urlParams.get('role');
+const currentUser = localStorage.getItem('clarify_user');
 
 if (shareId) {
-  // If sharing is opened, we will request data via BroadcastChannel if missing locally
-  state.currentId = shareId;
-  introDismissed = true;
-  homeEl.classList.remove('intro-active');
-  introSplash?.classList.add('hidden');
-  
-  if (userRole === 'viewer' || userRole === 'editor') {
-    document.body.classList.toggle('role-viewer', userRole === 'viewer');
-    initP2P({ id: shareId }, false);
-  }
-  
+  // Check if we own this meeting locally
   const sm = state.meetings.find(x => x.id === shareId);
-  if (sm && sm.shareEnabled) {
-    showApp();
+  
+  if (sm) {
+    // IT IS OUR MEETING
+    state.currentId = shareId;
+    introDismissed = true;
+    homeEl.classList.remove('intro-active');
+    introSplash?.classList.add('hidden');
+    
+    if (!currentUser) {
+      // We own it, but we are logged out. Force login.
+      document.getElementById('authScreen').classList.add('show');
+      homeEl.classList.add('hidden');
+      appEl.style.display = 'none';
+    } else {
+      showApp(); // Load as HOST with full permissions
+    }
+    
   } else {
+    // IT IS NOT OUR MEETING. WE ARE A GUEST.
+    state.currentId = shareId;
+    introDismissed = true;
+    homeEl.classList.remove('intro-active');
+    introSplash?.classList.add('hidden');
+    
+    if (userRole === 'viewer' || userRole === 'editor') {
+      document.body.classList.toggle('role-viewer', userRole === 'viewer');
+      initP2P({ id: shareId }, false);
+    }
+    
     appEl.style.display = '';
     homeEl.classList.add('hidden');
     const loader = document.createElement('div');
     loader.id = 'syncLoader';
-    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;color:var(--subtle);';
-    loader.textContent = 'Waiting for host to sync meeting data...';
+    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text);';
+    loader.innerHTML = `<div style="max-width:300px;text-align:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite; color:var(--accent); margin-bottom:16px;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Connecting to Host...</div>
+        <div style="font-size:13px; color:var(--muted);">Syncing meeting data securely.</div>
+      </div>`;
     document.body.appendChild(loader);
   }
 } else {
-  // Check if logged in
-  const currentUser = localStorage.getItem('clarify_user');
-  
+  // STANDARD BOOT
   if (!currentUser) {
-    // Show Auth Screen, block booting
     document.getElementById('authScreen').classList.add('show');
     homeEl.classList.add('hidden');
     appEl.style.display = 'none';
   } else {
-    // Proceed normally
     state.currentId = null;
     saveImmediate();
     renderHome();
   }
+}
 }
 
 

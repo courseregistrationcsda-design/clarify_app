@@ -64,6 +64,9 @@
       <input type="text" class="auth-input" placeholder="6-digit code" id="resetCode" maxlength="6" style="letter-spacing: 0.5em; text-align: center; font-weight: 600;" />
       <input type="password" class="auth-input" placeholder="New Password" id="newPass" />
       <button class="auth-btn" id="resetPassBtn">Reset Password & Login</button>
+      <div style="text-align:center; margin-top:8px;">
+        <span class="auth-link" id="resendCodeBtn" style="font-size:12px;">Didn't receive it? Resend Code</span>
+      </div>
     </div>
 
     <div class="auth-footer" style="justify-content: center; margin-top: 16px;">
@@ -528,6 +531,10 @@
 <script src="js/app.js"></script>
 
 
+<div class="integration-toast" id="authToast" style="z-index:100001; bottom: auto; top: 32px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span class="integration-toast-text" id="authToastText">Notice</span>
+      </div>
 <!-- Global Search Modal -->
 <div class="search-scrim" id="searchModal" role="dialog" aria-modal="true">
   <div class="search-modal" id="searchModalInner">

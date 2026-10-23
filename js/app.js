@@ -77,7 +77,7 @@ document.getElementById('loginBtn')?.addEventListener('click', (e) => {
     btn.disabled = true;
     
     setTimeout(() => {
-    localStorage.setItem('clarify_user', email);
+    try { localStorage.setItem('clarify_user', email); } catch(e) {}
     authScreen.classList.remove('show');
     btn.innerHTML = 'Sign In';
     btn.disabled = false;
@@ -89,6 +89,7 @@ document.getElementById('loginBtn')?.addEventListener('click', (e) => {
       
       // If it's a completely new user, show the splash screen
       if (!state.meetings.length) {
+        introDismissed = false; // Reset the flag so it doesn't freeze!
         document.getElementById('homeScreen').classList.add('intro-active');
         document.getElementById('introSplash').classList.remove('hidden');
         introTimer = setTimeout(() => dismissIntro(), 3000);
@@ -183,7 +184,7 @@ document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
     // Simulate password update in database
     setTimeout(() => {
       const email = document.getElementById('forgotEmail').value.trim();
-      localStorage.setItem('clarify_user', email); // Auto-login after reset
+      try { localStorage.setItem('clarify_user', email); } catch(e) {} // Auto-login after reset
       authScreen.classList.remove('show');
       
       btn.innerHTML = 'Reset Password & Login';
@@ -200,7 +201,7 @@ document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
 // Logout
 // Logout
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
-  localStorage.removeItem('clarify_user');
+  try { localStorage.removeItem('clarify_user'); } catch(e) {}
   window.location.reload();
 });
 
@@ -1375,11 +1376,7 @@ function broadcastUpdate() {
 
 function refreshUI() {
   const loader = document.getElementById('syncLoader');
-  if (loader) {
-    loader.remove();
-    showApp(); 
-    return;
-  }
+  if (loader) loader.remove();
   
   appEl.style.display = '';
   if (state.currentId) {
@@ -2854,7 +2851,8 @@ introTimer = setTimeout(() => dismissIntro(), 3000);
 const urlParams = new URLSearchParams(window.location.search);
 const shareId = urlParams.get('id');
 const userRole = urlParams.get('role');
-const currentUser = localStorage.getItem('clarify_user');
+let currentUser = null;
+try { currentUser = localStorage.getItem('clarify_user'); } catch(e) {}
 
 if (shareId) {
   // Check if we own this meeting locally
@@ -2867,7 +2865,15 @@ if (shareId) {
     homeEl.classList.remove('intro-active');
     introSplash?.classList.add('hidden');
     
-    if (!currentUser) {
+    
+  let storageWorks = true;
+  try { localStorage.setItem('test', '1'); localStorage.removeItem('test'); } catch(e) { storageWorks = false; }
+  
+  if (!storageWorks && !shareId) {
+    alert("Warning: You are using an in-app browser or strict privacy mode that blocks Local Storage. Your meetings will NOT be saved. Please open this app in Chrome or Safari.");
+  }
+
+  if (!currentUser) {
       // We own it, but we are logged out. Force login.
       document.getElementById('authScreen').classList.add('show');
       homeEl.classList.add('hidden');
@@ -2911,7 +2917,6 @@ if (shareId) {
     saveImmediate();
     renderHome();
   }
-}
 }
 
 

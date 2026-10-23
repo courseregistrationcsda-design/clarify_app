@@ -1108,6 +1108,56 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 
 
 
+
+/* ==================== HTTP SYNC FALLBACK (Messenger/Firewall Bypass) ==================== */
+let httpSyncInterval = null;
+window.httpConnected = false;
+
+function startHttpPolling(m, isHost) {
+  if (httpSyncInterval) clearInterval(httpSyncInterval);
+  
+  const syncFn = async () => {
+    try {
+      if (isHost) {
+        const currentM = cm();
+        if (currentM && currentM.shareEnabled) {
+          await fetch('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: currentM.id, meeting: currentM })
+          });
+        }
+      } else {
+        const res = await fetch('/api/sync?id=' + m.id);
+        if (res.ok) {
+          const meeting = await res.json();
+          window.httpConnected = true;
+          
+          const idx = state.meetings.findIndex(x => x.id === meeting.id);
+          if (idx > -1) state.meetings[idx] = meeting;
+          else state.meetings.push(meeting);
+          
+          originalSaveImmediate();
+          
+          const loader = document.getElementById('syncLoader');
+          if (loader) {
+            loader.remove();
+            showApp();
+          } else {
+            refreshUI();
+          }
+          renderAvatars();
+        }
+      }
+    } catch (e) {
+      console.warn("HTTP Sync error:", e);
+    }
+  };
+
+  syncFn();
+  httpSyncInterval = setInterval(syncFn, 3000);
+}
+
 // ==================== P2P INTERNET SYNC (PeerJS) ====================
 let peer = null;
 let p2pConns = [];
@@ -1124,6 +1174,7 @@ const PEER_CONFIG = {
 };
 
 function initP2P(m, isHost) {
+  startHttpPolling(m, isHost);
   if (typeof Peer === 'undefined') {
     setTimeout(() => initP2P(m, isHost), 200);
     return;
@@ -1194,20 +1245,15 @@ function initP2P(m, isHost) {
       
       const syncTimeout = setTimeout(() => {
         const loader = document.getElementById('syncLoader');
-        if (loader) {
+        if (loader && !window.httpConnected) {
           loader.innerHTML = `<div style="max-width:400px;text-align:center;">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            <h3 style="color:var(--text);margin:0 0 8px;">Connection Failed</h3>
-            <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">We couldn't reach the meeting Host.</p>
-            <div style="background:var(--surface-2);padding:12px;border-radius:8px;font-size:13px;text-align:left;color:var(--text);margin-bottom:20px;">
-              <strong>Troubleshooting:</strong><br>
-              1. Ensure the Host has the meeting tab open right now.<br>
-              2. <strong>In-app browsers (like Messenger) block syncing.</strong> Please tap the menu (•••) and select "Open in Safari" or "Open in Chrome".
-            </div>
+            <h3 style="color:var(--text);margin:0 0 8px;">Waiting for Host</h3>
+            <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">The Host hasn't opened this meeting yet, or they are offline.</p>
             <button class="primary-btn" onclick="window.location.search='';">Go to Home</button>
           </div>`;
         }
-      }, 8000); // 8 second timeout
+      }, 8000);
 
       hostConn.on('open', () => {
         hostConn.send({ type: 'REQUEST_STATE', id: m.id });
@@ -1249,10 +1295,20 @@ function handleIncomingUpdate(incomingState) {
 
 function broadcastUpdate() {
   const payload = { type: 'UPDATE', state: state };
-  if (hostConn && hostConn.open) {
+  if ((hostConn && hostConn.open) || window.httpConnected) {
     hostConn.send(payload);
   } else {
     p2pConns.forEach(c => { if(c.open) c.send(payload); });
+  }
+  
+  // Instant HTTP Fallback push
+  const currentM = cm();
+  if (currentM && currentM.shareEnabled) {
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: currentM.id, meeting: currentM })
+    }).catch(()=>{});
   }
 }
 

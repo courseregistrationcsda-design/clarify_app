@@ -1,4 +1,149 @@
 
+/* ==================== AUTHENTICATION & PASSWORD RESET ==================== */
+const authScreen = document.getElementById('authScreen');
+const authLoginView = document.getElementById('authLoginView');
+const authForgotView = document.getElementById('authForgotView');
+
+const forgotStep1 = document.getElementById('forgotStep1');
+const forgotStep2 = document.getElementById('forgotStep2');
+const forgotSubtitle = document.getElementById('forgotSubtitle');
+
+// Navigation
+document.getElementById('navToForgotBtn')?.addEventListener('click', () => {
+  authLoginView.style.display = 'none';
+  authForgotView.style.display = 'block';
+  forgotStep1.style.display = 'block';
+  forgotStep2.style.display = 'none';
+  forgotSubtitle.textContent = 'Enter your email to receive a 6-digit reset code.';
+});
+
+document.getElementById('navToLoginBtn')?.addEventListener('click', () => {
+  authForgotView.style.display = 'none';
+  authLoginView.style.display = 'block';
+});
+
+
+const authGuestView = document.getElementById('authGuestView');
+
+document.getElementById('navToGuestBtn')?.addEventListener('click', () => {
+  authLoginView.style.display = 'none';
+  authGuestView.style.display = 'block';
+});
+
+document.getElementById('navToLoginFromGuestBtn')?.addEventListener('click', () => {
+  authGuestView.style.display = 'none';
+  authLoginView.style.display = 'block';
+});
+
+document.getElementById('joinGuestBtn')?.addEventListener('click', (e) => {
+  const link = document.getElementById('guestLinkInput').value.trim();
+  if (!link) return alert('Please enter a valid shared meeting link or ID.');
+  
+  const btn = e.target;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Connecting...';
+  btn.disabled = true;
+  
+  setTimeout(() => {
+    // Basic parser for if they pasted a full URL vs just the ID
+    let targetId = link;
+    let targetRole = 'viewer'; // Default for manual guest entry unless URL specifies
+    
+    if (link.includes('?')) {
+      try {
+        const urlParams = new URLSearchParams(link.split('?')[1]);
+        if (urlParams.get('id')) targetId = urlParams.get('id');
+        if (urlParams.get('role')) targetRole = urlParams.get('role');
+      } catch (err) {}
+    }
+    
+    // Auto route them to the meeting
+    window.location.search = '?id=' + targetId + '&role=' + targetRole;
+  }, 1000);
+});
+
+// Login Simulation
+document.getElementById('loginBtn')?.addEventListener('click', (e) => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  
+  if (!email || !pass) return alert('Please enter both email and password.');
+  
+  const btn = e.target;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Authenticating...';
+  btn.disabled = true;
+  
+  setTimeout(() => {
+    localStorage.setItem('clarify_user', email);
+    authScreen.classList.remove('show');
+    btn.innerHTML = 'Sign In';
+    btn.disabled = false;
+    
+    // Boot the app normally
+    saveImmediate();
+    renderHome();
+    
+    // If it's a completely new user, show the splash screen
+    if (!state.meetings.length) {
+      document.getElementById('homeScreen').classList.add('intro-active');
+      document.getElementById('introSplash').classList.remove('hidden');
+      introTimer = setTimeout(() => dismissIntro(), 3000);
+    }
+  }, 1200);
+});
+
+// Forgot Password - Step 1: Send Code
+document.getElementById('sendCodeBtn')?.addEventListener('click', (e) => {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) return alert('Please enter your email address.');
+  
+  const btn = e.target;
+  btn.innerHTML = 'Sending Code...';
+  btn.disabled = true;
+  
+  // Simulate API call to Vercel/SendGrid to send recovery email
+  setTimeout(() => {
+    forgotStep1.style.display = 'none';
+    forgotStep2.style.display = 'block';
+    forgotSubtitle.innerHTML = `We sent a secure code to <strong>${email}</strong>.<br>Please enter it below.`;
+    btn.innerHTML = 'Send Reset Code';
+    btn.disabled = false;
+  }, 1500);
+});
+
+// Forgot Password - Step 2: Reset & Login
+document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
+  const code = document.getElementById('resetCode').value.trim();
+  const newPass = document.getElementById('newPass').value.trim();
+  
+  if (code.length !== 6) return alert('Please enter the 6-digit code.');
+  if (newPass.length < 6) return alert('Password must be at least 6 characters.');
+  
+  const btn = e.target;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Resetting...';
+  btn.disabled = true;
+  
+  // Simulate password update in database
+  setTimeout(() => {
+    const email = document.getElementById('forgotEmail').value.trim();
+    localStorage.setItem('clarify_user', email); // Auto-login after reset
+    authScreen.classList.remove('show');
+    
+    btn.innerHTML = 'Reset Password & Login';
+    btn.disabled = false;
+    
+    // Boot the app
+    saveImmediate();
+    renderHome();
+  }, 2000);
+});
+
+// Logout
+document.getElementById('logoutBtn')?.addEventListener('click', () => {
+  localStorage.removeItem('clarify_user');
+  window.location.reload();
+});
+
+
 /* ==================== VOICE UI (TALK TO NOTES) ==================== */
 const voiceOrb = document.getElementById('voiceOrb');
 const voiceToast = document.getElementById('voiceToast');
@@ -2609,8 +2754,6 @@ if (shareId) {
   if (sm && sm.shareEnabled) {
     showApp();
   } else {
-    // If not found locally, we wait a moment for the broadcast channel to sync it.
-    // If it never arrives, it just stays blank or we can show an empty state.
     appEl.style.display = '';
     homeEl.classList.add('hidden');
     const loader = document.createElement('div');
@@ -2620,9 +2763,20 @@ if (shareId) {
     document.body.appendChild(loader);
   }
 } else {
-  state.currentId = null;
-  saveImmediate();
-  renderHome();
+  // Check if logged in
+  const currentUser = localStorage.getItem('clarify_user');
+  
+  if (!currentUser) {
+    // Show Auth Screen, block booting
+    document.getElementById('authScreen').classList.add('show');
+    homeEl.classList.add('hidden');
+    appEl.style.display = 'none';
+  } else {
+    // Proceed normally
+    state.currentId = null;
+    saveImmediate();
+    renderHome();
+  }
 }
 
 

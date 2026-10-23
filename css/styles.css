@@ -1985,3 +1985,41 @@ body.role-viewer .notes-pane-eyebrow {
   70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
   100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
+
+/* --- Authentication & Forgot Password UI --- */
+.auth-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  z-index: 100000; display: none; align-items: center; justify-content: center;
+  animation: fadeIn 300ms ease;
+}
+.auth-screen.show { display: flex; }
+.auth-card {
+  background: var(--surface-glass); backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--border); border-radius: 24px;
+  padding: 40px; width: 100%; max-width: 400px;
+  box-shadow: var(--shadow-lg); text-align: center;
+  transition: all 400ms cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+.auth-logo { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.05em; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.auth-logo .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.auth-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; line-height: 1.5; }
+.auth-input {
+  width: 100%; padding: 14px 16px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface-2);
+  margin-bottom: 16px; font-size: 15px; color: var(--text);
+  outline: none; transition: border-color var(--t), box-shadow var(--t);
+}
+.auth-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
+.auth-btn {
+  width: 100%; padding: 14px; border-radius: 12px;
+  background: var(--accent); color: #fff; font-weight: 600; font-size: 15px;
+  cursor: pointer; transition: all var(--t); border: none; margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3); }
+.auth-btn:active { transform: translateY(1px); }
+.auth-btn:disabled { opacity: 0.7; pointer-events: none; }
+.auth-link { font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: none; transition: color var(--t); font-weight: 500; }
+.auth-link:hover { color: var(--text); }
+.auth-footer { display: flex; justify-content: space-between; align-items: center; }

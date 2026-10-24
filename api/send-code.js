@@ -11,20 +11,12 @@ export default async function handler(req) {
     const { email } = await req.json();
     if (!email) return new Response(JSON.stringify({ error: 'Email required' }), { status: 400 });
 
-    // Generate a random 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // If no Resend API key is provided, gracefully fallback to a mock response so the user isn't blocked.
     if (!process.env.RESEND_API_KEY) {
-      return new Response(JSON.stringify({ 
-        success: true, 
-        mock: true, 
-        code: code,
-        message: 'No RESEND_API_KEY configured in Vercel. Providing code directly.'
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'RESEND_API_KEY is missing from Vercel Environment Variables.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Call Resend API (Requires a verified domain on Resend.com)
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -32,7 +24,7 @@ export default async function handler(req) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Clarify App <onboarding@resend.dev>', // Default testing email
+        from: 'Clarify App <onboarding@resend.dev>', // Update this to your verified domain (e.g. notifications@yourdomain.com) if deploying to production
         to: email,
         subject: 'Your Clarify Password Reset Code',
         html: `<div style="font-family: sans-serif; padding: 20px;">
@@ -45,17 +37,16 @@ export default async function handler(req) {
     });
 
     if (!res.ok) {
-      // If Resend fails (e.g. unverified email, bad key), fallback to mock to prevent blocking
-      return new Response(JSON.stringify({ 
-        success: true, mock: true, code: code, message: 'Email API failed. Providing code directly.' 
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      const errorData = await res.json();
+      return new Response(JSON.stringify({ error: 'Failed to send email. Check Resend domain verification.', details: errorData }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    return new Response(JSON.stringify({ success: true, mock: false, code: code }), { 
+    // Return the code to the frontend for local validation
+    return new Response(JSON.stringify({ success: true, code: code }), { 
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Failed to process request' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }

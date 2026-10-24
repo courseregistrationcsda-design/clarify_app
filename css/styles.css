@@ -1910,8 +1910,8 @@ body.role-viewer .notes-pane-eyebrow {
 
 /* --- Voice UI Orb --- */
 .voice-orb {
-  position: fixed; bottom: 32px; left: 32px;
-  width: 56px; height: 56px; border-radius: 50%;
+  position: fixed; bottom: 32px; right: 32px; left: auto;
+  width: 72px; height: 72px; border-radius: 50%;
   background: var(--surface-glass);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
@@ -1937,7 +1937,8 @@ body.role-viewer .notes-pane-eyebrow {
 }
 
 .voice-toast {
-  position: fixed; bottom: 100px; left: 32px;
+  position: fixed; bottom: 120px; right: 32px; left: auto;
+  transform-origin: bottom right;
   background: var(--surface-glass); backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--border); border-radius: 12px;
   padding: 12px 16px; box-shadow: var(--shadow-lg);
@@ -2023,3 +2024,37 @@ body.role-viewer .notes-pane-eyebrow {
 .auth-link { font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: none; transition: color var(--t); font-weight: 500; }
 .auth-link:hover { color: var(--text); }
 .auth-footer { display: flex; justify-content: space-between; align-items: center; }
+
+/* --- Touch & Video Controls --- */
+.video-bubble {
+  touch-action: none; /* Prevent native scrolling when dragging on tablet */
+}
+.video-bubble-overlay {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+  padding: 6px 10px; border-radius: 20px;
+  opacity: 0; transition: opacity 0.2s ease;
+  z-index: 2;
+}
+.video-bubble:hover .video-bubble-overlay, 
+.video-bubble.touch-active .video-bubble-overlay {
+  opacity: 1;
+}
+.vid-ctrl-btn {
+  background: none; border: none; color: white;
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 50%; transition: background 0.2s;
+  padding: 0;
+}
+.vid-ctrl-btn:hover { background: rgba(255,255,255,0.2); }
+.vid-ctrl-btn.off { color: #ef4444; }
+
+/* Grid / Expand state */
+.video-bubble.expanded {
+  width: 90vw !important; height: 80vh !important;
+  top: 50% !important; left: 50% !important; right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 24px;
+  z-index: 100000 !important;
+}

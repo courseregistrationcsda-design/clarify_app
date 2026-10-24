@@ -44,47 +44,20 @@ document.getElementById('joinGuestBtn')?.addEventListener('click', (e) => {
   btn.disabled = true;
   
   setTimeout(() => {
-    // Basic parser for if they pasted a full URL vs just the ID
-    let targetId = link;
-    let targetRole = 'viewer'; // Default for manual guest entry unless URL specifies
-    
-    if (link.includes('?')) {
-      try {
-        const urlParams = new URLSearchParams(link.split('?')[1]);
-        if (urlParams.get('id')) targetId = urlParams.get('id');
-        if (urlParams.get('role')) targetRole = urlParams.get('role');
-      } catch (err) {}
-    }
-    
-    // Auto route them to the meeting
-    window.location.search = '?id=' + targetId + '&role=' + targetRole;
-  }, 1000);
-});
-
-// Login Simulation
-document.getElementById('loginBtn')?.addEventListener('click', (e) => {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
-  
-  if (!email || !pass) {
-    alert('Please enter both email and password.');
-    return;
-  }
-  
-  const btn = e.target;
-  requestAnimationFrame(() => {
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Authenticating...';
-    btn.disabled = true;
-    
-    setTimeout(() => {
-    try { localStorage.setItem('clarify_user', email); } catch(e) {}
-    authScreen.classList.remove('show');
-    btn.innerHTML = 'Sign In';
-    btn.disabled = false;
-    
-    // Boot the app normally
-    queueMicrotask(() => {
-      saveImmediate();
+      try { localStorage.setItem('clarify_user', email); } catch(e) {}
+      authScreen.classList.remove('show');
+      
+      // Fix Blank Screen Bug: Ensure Home layout is visible before rendering
+      const homeScreen = document.getElementById('homeScreen');
+      if (homeScreen) homeScreen.classList.remove('hidden');
+      const appWrap = document.getElementById('app');
+      if (appWrap) appWrap.style.display = 'none';
+      
+      btn.innerHTML = 'Sign In';
+      btn.disabled = false;
+      
+      queueMicrotask(() => {
+        saveImmediate();
       renderHome();
       
       // If it's a completely new user, show the splash screen
@@ -130,27 +103,19 @@ async function handleSendCode(btnElement) {
     
     if (res.ok) {
       const data = await res.json();
-      currentResetCode = data.code; // Store locally to validate
+      currentResetCode = data.code; 
       
       forgotStep1.style.display = 'none';
       forgotStep2.style.display = 'block';
       forgotSubtitle.innerHTML = `We sent a secure code to <strong>${email}</strong>.<br>Please enter it below.`;
       
-      if (data.mock) {
-        showAuthToast(`<strong>Demo Mode:</strong> Your reset code is <strong style="letter-spacing:2px; color:var(--accent);">${data.code}</strong><br><span style="font-size:11px; color:var(--muted);">Add RESEND_API_KEY in Vercel to email this.</span>`, 8000);
-      } else {
-        showAuthToast('Reset code sent to your email!');
-      }
+      showAuthToast('Reset code sent to your email!');
     } else {
-      alert("Failed to connect to the server.");
+      const err = await res.json();
+      alert(err.error || "Failed to send reset code.");
     }
   } catch (e) {
-    // Offline simulation fallback
-    currentResetCode = "123456";
-    forgotStep1.style.display = 'none';
-    forgotStep2.style.display = 'block';
-    forgotSubtitle.innerHTML = `We sent a secure code to <strong>${email}</strong>.<br>Please enter it below.`;
-    showAuthToast('<strong>Offline Fallback:</strong> Your reset code is <strong style="letter-spacing:2px; color:var(--accent);">123456</strong>');
+    alert("Network error. Could not reach the server.");
   }
   
   btnElement.innerHTML = btnElement.id === 'sendCodeBtn' ? 'Send Reset Code' : 'Resend Code';
@@ -1093,6 +1058,16 @@ $('#saveTeamBtn').addEventListener('click', () => {
       members: currentTeamMembers
     });
   }
+  
+  // Trigger Email Invites
+  if (currentTeamMembers.length > 0) {
+    const newEmails = currentTeamMembers.map(m => m.email);
+    fetch('/api/send-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emails: newEmails, teamName: name })
+    }).catch(()=>{});
+  }
   saveImmediate();
   $('#teamModal').classList.remove('show');
   renderTeams();
@@ -1175,41 +1150,36 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 let httpSyncInterval = null;
 window.httpConnected = false;
 
+
 function startHttpPolling(m, isHost) {
   if (httpSyncInterval) clearInterval(httpSyncInterval);
   
   const syncFn = async () => {
+    const localM = cm();
+    if (!localM || !localM.shareEnabled) return;
     try {
-      if (isHost) {
-        const currentM = cm();
-        if (currentM && currentM.shareEnabled) {
-          await fetch('/api/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentM.id, meeting: currentM })
-          });
-        }
-      } else {
-        const res = await fetch('/api/sync?id=' + m.id);
-        if (res.ok) {
-          const meeting = await res.json();
-          window.httpConnected = true;
-          
-          const idx = state.meetings.findIndex(x => x.id === meeting.id);
-          if (idx > -1) state.meetings[idx] = meeting;
-          else state.meetings.push(meeting);
-          
+      const res = await fetch('/api/sync?id=' + localM.id);
+      if (res.ok) {
+        window.httpConnected = true;
+        const serverM = await res.json();
+        
+        // PULL: Server has a newer update (from another collaborator)
+        if (serverM && (serverM.lastUpdated || 0) > (localM.lastUpdated || 0)) {
+          const idx = state.meetings.findIndex(x => x.id === serverM.id);
+          if (idx > -1) state.meetings[idx] = serverM;
+          else state.meetings.push(serverM);
+          state.lastUpdated = serverM.lastUpdated;
           originalSaveImmediate();
-          
-          const loader = document.getElementById('syncLoader');
-          if (loader) {
-            loader.remove();
-            showApp();
-          } else {
-            refreshUI();
-          }
+          refreshUI();
           renderAvatars();
+        } 
+        // PUSH: Local is newer (we typed something) and needs to push to server
+        else if (serverM && (localM.lastUpdated || 0) > (serverM.lastUpdated || 0)) {
+          fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(()=>{});
         }
+      } else if (res.status === 404 && isHost) {
+        // Initial push if server empty
+        fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(()=>{});
       }
     } catch (e) {
       console.warn("HTTP Sync error:", e);
@@ -1219,6 +1189,7 @@ function startHttpPolling(m, isHost) {
   syncFn();
   httpSyncInterval = setInterval(syncFn, 3000);
 }
+
 
 // ==================== P2P INTERNET SYNC (PeerJS) ====================
 let peer = null;
@@ -1252,8 +1223,8 @@ function initP2P(m, isHost) {
     peer = new Peer('clarify-' + m.id, PEER_CONFIG);
 
     peer.on('call', (call) => {
-      if (localStream) call.answer(localStream);
-      else call.answer();
+      // Just answer to receive their stream. We explicitly call them with our stream.
+      call.answer();
       setupCall(call);
     });
     peer.on('error', (err) => {
@@ -1293,8 +1264,8 @@ function initP2P(m, isHost) {
     peer = new Peer(PEER_CONFIG);
 
     peer.on('call', (call) => {
-      if (localStream) call.answer(localStream);
-      else call.answer();
+      // Just answer to receive their stream. We explicitly call them with our stream.
+      call.answer();
       setupCall(call);
     });
     peer.on('error', (err) => {
@@ -1349,6 +1320,7 @@ function initP2P(m, isHost) {
 }
 
 function handleIncomingUpdate(incomingState) {
+  if ((incomingState.lastUpdated || 0) < (state.lastUpdated || 0)) return; // Discard old overwrites
   state = Object.assign(state, incomingState);
   state.meetings = (state.meetings || []).map(normalizeMeeting);
   originalSaveImmediate();
@@ -1374,6 +1346,22 @@ function broadcastUpdate() {
   }
 }
 
+
+function safeUpdateVal(elId, val) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (el.value !== val) {
+     if (document.activeElement === el) {
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        el.value = val || '';
+        el.setSelectionRange(start, end);
+     } else {
+        el.value = val || '';
+     }
+  }
+}
+
 function refreshUI() {
   const loader = document.getElementById('syncLoader');
   if (loader) loader.remove();
@@ -1383,12 +1371,46 @@ function refreshUI() {
     const m = state.meetings.find(x => x.id === state.currentId);
     if (!m) { showHome(); return; }
     
-    renderMeetingHeader();
-    renderAgenda();
-    renderFocus(false);
-    refreshNotesPreview();
+    const activeEl = document.activeElement;
+    const activeId = activeEl ? activeEl.id : null;
+    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+    
+    // Smart Render: Do not destroy the DOM if the collaborator is currently typing
+    if (!isTyping) {
+      renderMeetingHeader();
+      renderAgenda(); 
+    } else {
+      // Just silently update the header text if they aren't directly editing it
+      if (activeId !== 'meetingTitleDisplay') {
+        const titleDisp = document.getElementById('meetingTitleDisplay');
+        if (titleDisp) titleDisp.textContent = m.title || '';
+      }
+    } 
+    
+    // Safely inject values without triggering total DOM tear-downs
+    if (m.activeId) {
+       const item = m.items.find(i => i.id === m.activeId);
+       if (item) {
+         safeUpdateVal('notesArea', item.notes);
+         const target = document.getElementById('topicNotesTarget');
+         if(target) target.textContent = '› ' + (item.title || 'Untitled');
+       }
+    }
+    if (typeof activeTaskForNotes !== 'undefined' && activeTaskForNotes) {
+       const t = m.tasks.find(x => x.id === activeTaskForNotes.id);
+       if (t) {
+         activeTaskForNotes = t;
+         safeUpdateVal('taskNotesArea', t.notes);
+       }
+    }
     if (document.getElementById('workPanel')?.classList.contains('show')) {
-      renderActions();
+      if (!isTyping) renderActions();
+    }
+    
+    // Restore focus if it was a text input inside the rebuilt agenda
+    if (activeId) {
+       const el = document.getElementById(activeId);
+       if (el && el !== document.activeElement) el.focus();
     }
   } else {
     if (!document.getElementById('homeScreen').classList.contains('hidden')) {
@@ -1397,6 +1419,7 @@ function refreshUI() {
     }
   }
 }
+
 
 // Hook into save
 const originalSaveImmediate = saveImmediate;
@@ -1431,13 +1454,12 @@ function renderAvatars() {
     
     // Generate realistic realistic avatars based on count
     let html = '';
-    const colors = ['#4f46e5', '#059669', '#ea580c', '#db2777', '#ca8a04'];
-    const initialsList = ['JD', 'AK', 'MR', 'SL', 'TJ'];
+    const genericAvatar = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
     
     // We max out at 3 individual avatars, then show a "+X" bubble
     const showCount = Math.min(connectionCount, 3);
     for (let i = 0; i < showCount; i++) {
-      html += `<div class="avatar" style="background:${colors[i % colors.length]}; z-index:${3 - i};">${initialsList[i % initialsList.length]}</div>`;
+      html += `<div class="avatar" style="background:var(--surface-2); color:var(--text); border-color:var(--border); z-index:${3 - i};">${genericAvatar}</div>`;
     }
     if (connectionCount > 3) {
       html += `<div class="avatar" style="background:#6b7280; z-index:0;">+${connectionCount - 3}</div>`;
@@ -3079,6 +3101,10 @@ function addVideoBubble(id, stream, isLocal) {
   const wrap = document.createElement('div');
   wrap.className = 'video-bubble';
   wrap.id = 'vid-' + id;
+  // Default dimensions
+  wrap.dataset.width = 140;
+  wrap.style.width = '140px';
+  wrap.style.height = '140px';
   wrap.style.top = (80 + (videoOffsetCount * 160)) + 'px';
   wrap.style.right = '24px';
   videoOffsetCount++;
@@ -3090,7 +3116,59 @@ function addVideoBubble(id, stream, isLocal) {
   if (isLocal) vid.muted = true; // Prevent echo
   
   wrap.appendChild(vid);
-  makeDraggable(wrap);
+  
+  // Add Zoom-like controls
+  const overlay = document.createElement('div');
+  overlay.className = 'video-bubble-overlay';
+  
+  if (isLocal) {
+    const micBtn = document.createElement('button');
+    micBtn.className = 'vid-ctrl-btn';
+    micBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
+    micBtn.onclick = (e) => {
+      e.stopPropagation();
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        micBtn.classList.toggle('off', !audioTrack.enabled);
+        if(!audioTrack.enabled) micBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.88"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
+        else micBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
+      }
+    };
+    
+    const camBtn = document.createElement('button');
+    camBtn.className = 'vid-ctrl-btn';
+    camBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>';
+    camBtn.onclick = (e) => {
+      e.stopPropagation();
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        camBtn.classList.toggle('off', !videoTrack.enabled);
+      }
+    };
+    
+    overlay.appendChild(micBtn);
+    overlay.appendChild(camBtn);
+  }
+  
+  const expandBtn = document.createElement('button');
+  expandBtn.className = 'vid-ctrl-btn';
+  expandBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
+  expandBtn.onclick = (e) => {
+    e.stopPropagation();
+    wrap.classList.toggle('expanded');
+    if (wrap.classList.contains('expanded')) {
+      vid.style.borderRadius = '24px';
+    } else {
+      vid.style.borderRadius = '50%';
+    }
+  };
+  overlay.appendChild(expandBtn);
+  
+  wrap.appendChild(overlay);
+  
+  makeTouchAndDraggable(wrap);
   document.body.appendChild(wrap);
 }
 
@@ -3099,38 +3177,102 @@ function removeVideoBubble(id) {
   if (el) el.remove();
 }
 
-function makeDraggable(el) {
+function makeTouchAndDraggable(el) {
   let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-  el.onmousedown = dragMouseDown;
+  let initialDist = 0, initialWidth = 140;
+
+  // Mouse Events
+  el.onmousedown = dragStart;
   
-  function dragMouseDown(e) {
+  // Touch Events for Tablets/Mobile
+  el.addEventListener('touchstart', touchStart, { passive: false });
+  
+  function dragStart(e) {
+    if (e.target.closest('.vid-ctrl-btn')) return; // Ignore clicks on buttons
     e = e || window.event;
     e.preventDefault();
     pos3 = e.clientX;
     pos4 = e.clientY;
-    document.onmouseup = closeDragElement;
-    document.onmousemove = elementDrag;
+    document.onmouseup = dragEnd;
+    document.onmousemove = drag;
     el.style.transform = 'scale(0.95)';
-    el.style.zIndex = 10001; // Bring to front
+    el.style.zIndex = 10001;
   }
   
-  function elementDrag(e) {
+  function drag(e) {
     e = e || window.event;
     e.preventDefault();
+    if (el.classList.contains('expanded')) return; // Don't drag if fullscreen grid
     pos1 = pos3 - e.clientX;
     pos2 = pos4 - e.clientY;
     pos3 = e.clientX;
     pos4 = e.clientY;
     el.style.top = (el.offsetTop - pos2) + "px";
     el.style.left = (el.offsetLeft - pos1) + "px";
-    el.style.right = 'auto'; // release right constraint
+    el.style.right = 'auto';
   }
   
-  function closeDragElement() {
+  function dragEnd() {
     document.onmouseup = null;
     document.onmousemove = null;
     el.style.transform = 'scale(1)';
     el.style.zIndex = 10000;
+  }
+
+  // Tablet Pinch, Pan, and Touch
+  function touchStart(e) {
+    if (e.target.closest('.vid-ctrl-btn')) return;
+    el.classList.add('touch-active');
+    
+    if (e.touches.length === 1) {
+      pos3 = e.touches[0].clientX;
+      pos4 = e.touches[0].clientY;
+      document.addEventListener('touchmove', touchDrag, { passive: false });
+      document.addEventListener('touchend', touchEnd);
+    } else if (e.touches.length === 2) {
+      // Pinch to Zoom start
+      initialDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialWidth = parseInt(el.dataset.width) || el.offsetWidth;
+    }
+    el.style.zIndex = 10001;
+  }
+
+  function touchDrag(e) {
+    e.preventDefault();
+    if (el.classList.contains('expanded')) return;
+    
+    if (e.touches.length === 1) {
+      pos1 = pos3 - e.touches[0].clientX;
+      pos2 = pos4 - e.touches[0].clientY;
+      pos3 = e.touches[0].clientX;
+      pos4 = e.touches[0].clientY;
+      el.style.top = (el.offsetTop - pos2) + "px";
+      el.style.left = (el.offsetLeft - pos1) + "px";
+      el.style.right = 'auto';
+    } else if (e.touches.length === 2) {
+      // Pinch to Zoom scale
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = currentDist / initialDist;
+      let newWidth = Math.max(80, Math.min(300, initialWidth * scale)); // clamp 80px to 300px
+      el.dataset.width = newWidth;
+      el.style.width = newWidth + 'px';
+      el.style.height = newWidth + 'px';
+    }
+  }
+
+  function touchEnd(e) {
+    if (e.touches.length === 0) {
+      document.removeEventListener('touchmove', touchDrag);
+      document.removeEventListener('touchend', touchEnd);
+      el.classList.remove('touch-active');
+      el.style.zIndex = 10000;
+    }
   }
 }
 
@@ -3162,8 +3304,23 @@ async function toggleTabAudio() {
       return;
     }
     
-    // We only care about audio, drop the video stream to save resources
-    stream.getVideoTracks().forEach(t => t.stop());
+    // We keep the video track so we can broadcast the screen share
+    
+    addVideoBubble('local-screen', stream, true);
+    const callOptions = { metadata: { type: 'screen' } };
+    if (peer) {
+      if (hostConn && hostConn.open) {
+        const c = peer.call(hostConn.peer, stream, callOptions);
+        setupCall(c);
+      } else if (p2pConns) {
+        p2pConns.forEach(conn => {
+          if(conn.open) {
+            const c = peer.call(conn.peer, stream, callOptions);
+            setupCall(c);
+          }
+        });
+      }
+    }
     
     mediaRecorder = new MediaRecorder(stream);
     
@@ -3197,6 +3354,8 @@ async function toggleTabAudio() {
       if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
       btn.classList.remove('mic-active');
       label.textContent = 'Record Tab';
+      removeVideoBubble('local-screen');
+      activeCalls.forEach(c => c.close());
     };
     
   } catch (err) {

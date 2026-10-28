@@ -17,7 +17,7 @@ Clarify is a lightweight Single-Page Application (SPA) natively optimized for **
 *   **Database / Storage:** Browser \`localStorage\` (with volatile in-memory fallback for iframe/restricted environments).
 *   **AI Integration:** OpenAI API (GPT-4o-mini for enhancement, Whisper for transcription).
 
-**Prototype access limitation:** The frontend opens a local workspace and does not implement account authentication or password recovery. The existing email/reset endpoints are prototypes, not a secure account system. Meetings stored in the browser are not protected by a login. The optional in-memory HTTP sync relay is also unauthenticated; do not use it for sensitive data.
+**Prototype access limitation:** The frontend opens a local workspace and does not implement account authentication or password recovery. The existing email/reset endpoints are prototypes, not a secure account system. Meetings stored in the browser are not protected by a login. Shared links are not access-controlled: the viewer role is only a display mode and can be changed to editor. Share only with trusted people, and never use the feature for sensitive data. The experimental in-memory HTTP relay is not used for syncing.
 
 ### Folder Structure
 \`\`\`text
@@ -98,4 +98,4 @@ clarify-vercel-deploy/
 ## 6. Security & Privacy Rules
 1.  **Audio Deletion:** Audio data is strictly transient. System tab audio chunks sent to \`/api/transcribe\` must be held only in memory, processed by the Whisper API, and immediately discarded. Never write audio blobs to disk/storage.
 2.  **Link Revocation:** If a Host toggles Share to "Off", the app must immediately trigger \`peer.destroy()\` and sever all active P2P connections, instantly kicking Viewers out of the live session.
-3.  **Destructive Actions:** Destructive UI actions (Delete Meeting, Clear Notes) must be hidden via CSS \`display: none !important\` when \`.role-viewer\` is active to prevent DOM manipulation exploits.
+3.  **Destructive Actions:** Viewer mode hides some destructive controls for presentation only. CSS is not an authorization boundary, and the current sharing prototype does not securely enforce read-only access.

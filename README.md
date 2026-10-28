@@ -16,7 +16,7 @@ Open the served page and choose **Open local workspace**, or join using a shared
 
 Meetings are stored in the current browser's local storage. There is no account authentication or working password recovery backend in this prototype; local access is not password-protected. A browser that blocks storage can still open a temporary workspace, but its meetings will be lost when the page closes.
 
-Shared links depend on PeerJS and/or the experimental HTTP relay. The relay is in-memory and does not authenticate requests; do not use it for sensitive data. A shared link may not connect if the host or the required services are offline.
+Shared links require a live PeerJS connection and the host to keep the meeting open. Sharing is experimental and not access-controlled: a viewer can change their link to edit, so share only with trusted people and do not share sensitive information. The prototype in-memory HTTP relay is not used for syncing.
 
 ## Tests
 

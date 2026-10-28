@@ -259,7 +259,7 @@ searchInput?.addEventListener('input', (e) => {
   
   let matches = [];
   
-  (state.meetings || []).forEach(m => {
+  ownedMeetings().forEach(m => {
     // Check Title
     if ((m.title || '').toLowerCase().includes(q)) {
       matches.push({ meeting: m, type: 'Meeting', context: m.title || 'Untitled' });
@@ -283,7 +283,7 @@ searchInput?.addEventListener('input', (e) => {
     searchEmpty.classList.remove('show');
     searchResults.classList.add('has-results');
     searchResults.innerHTML = matches.map((m, i) => `
-      <div class="search-result-item" data-id="${m.meeting.id}">
+      <div class="search-result-item" data-id="${escapeAttr(m.meeting.id)}">
         <div class="search-result-title">${escapeHTML(m.meeting.title || 'Untitled Meeting')}</div>
         <div class="search-result-context">Matched in ${m.type}: ${escapeHTML(m.context)}</div>
       </div>
@@ -385,7 +385,7 @@ function load() {
       m.expandedTasks = v.expandedTasks || {};
       m.statusFilter = v.statusFilter || 'all';
       m.status = computeAutoStatus(m);
-      s.meetings.push(m);
+      s.meetings.push(normalizeMeeting(m));
       return s;
     }
     return defaultState();
@@ -395,12 +395,15 @@ function normalizeMeeting(m) {
   return {
     ...newMeeting(),
     ...m,
-    items: m.items || [],
-    tasks: (m.tasks || []).map(t => ({
-      status: t.status || (t.done ? 'done' : 'ongoing'),
-      notes: t.notes || '', links: t.links || [],
+    items: (Array.isArray(m.items) ? m.items : []).filter(item => item && typeof item === 'object').map(item => ({
+      ...item,
+      limitMin: Number.isFinite(Number(item.limitMin)) ? Number(item.limitMin) : 0,
+    })),
+    tasks: (Array.isArray(m.tasks) ? m.tasks : []).filter(t => t && typeof t === 'object').map(t => ({
       ...t,
-      status: t.status || (t.done ? 'done' : 'ongoing'),
+      notes: typeof t.notes === 'string' ? t.notes : '',
+      links: Array.isArray(t.links) ? t.links : [],
+      status: STATUSES.includes(t.status) ? t.status : (t.done ? 'done' : 'ongoing'),
     })),
     expandedTasks: m.expandedTasks || {},
     statusFilter: m.statusFilter || 'all',
@@ -502,7 +505,9 @@ function normalizeHref(raw) {
   if (!raw) return '';
   let s = String(raw).trim();
   if (!s) return '';
-  if (/^[a-z][a-z0-9+\-.]*:/i.test(s)) return s;
+  if (/^[a-z][a-z0-9+\-.]*:/i.test(s) && !/^[a-zA-Z]:[\\/]/.test(s)) {
+    return /^(https?|mailto|tel|file):/i.test(s) ? s : '';
+  }
   if (/^\\\\/.test(s)) return 'file://' + s.replace(/\\/g,'/').replace(/^\/\//,'');
   if (/^[a-zA-Z]:[\\/]/.test(s)) return 'file:///' + s.replace(/\\/g,'/');
   if (s.startsWith('/')) return 'file://' + s;
@@ -559,7 +564,7 @@ function meetingRowHTML(m) {
   ].filter(Boolean).join('');
 
   return `
-    <div class="meeting-row ${isToday?'is-today':''}" data-id="${m.id}" role="button" tabindex="0" aria-label="Open meeting: ${escapeAttr(m.title || 'Untitled meeting')}, ${escapeAttr(relDate(m.date))}, ${escapeAttr(m.status)}">
+    <div class="meeting-row ${isToday?'is-today':''}" data-id="${escapeAttr(m.id)}" role="button" tabindex="0" aria-label="Open meeting: ${escapeAttr(m.title || 'Untitled meeting')}, ${escapeAttr(relDate(m.date))}, ${escapeAttr(m.status)}">
       <div class="meeting-row-date">
         <div class="mon">${mon}</div>
         <div class="day">${day}</div>
@@ -583,9 +588,15 @@ function meetingRowHTML(m) {
 }
 
 
+function ownedMeetings() {
+  const guestIds = new Set(guestMeetingIds());
+  return state.meetings.filter(meeting => !guestIds.has(meeting.id));
+}
+
 function updateBentoAnalytics() {
   const bentoGrid = document.getElementById('bentoGrid');
-  if (!bentoGrid || !state.meetings.length) {
+  const meetings = ownedMeetings();
+  if (!bentoGrid || !meetings.length) {
     if(bentoGrid) bentoGrid.style.display = 'none';
     return;
   }
@@ -596,7 +607,7 @@ function updateBentoAnalytics() {
   let totalTasks = 0;
   let doneTasks = 0;
 
-  state.meetings.forEach(m => {
+  meetings.forEach(m => {
     totalSec += m.durationSec || 0;
     totalTasks += m.tasks.length;
     doneTasks += m.tasks.filter(t => t.status === 'done').length;
@@ -621,12 +632,13 @@ function updateBentoAnalytics() {
 
 function renderHome() {
   const byStatus = { ongoing: [], scheduled: [], done: [] };
-  state.meetings.forEach(m => byStatus[m.status]?.push(m));
+  const meetings = ownedMeetings();
+  meetings.forEach(m => byStatus[m.status]?.push(m));
   byStatus.scheduled.sort((a,b) => a.date.localeCompare(b.date));
   byStatus.ongoing.sort((a,b) => (b.lastOpenedAt||b.createdAt||'').localeCompare(a.lastOpenedAt||a.createdAt||''));
   byStatus.done.sort((a,b) => b.date.localeCompare(a.date));
 
-  const total = state.meetings.length;
+  const total = meetings.length;
   updateBentoAnalytics();
   if(homeHeading) homeHeading.textContent = total ? 'Your Meetings' : 'Welcome to Clarify';
   if(homeSub) homeSub.textContent = total ? 'Pick one to open or start a new one.' : 'Create your first meeting to get started.';
@@ -660,6 +672,7 @@ function renderHome() {
 
 function showHome() {
   pauseSession();
+  stopP2P();
   if (timerInt) { clearInterval(timerInt); timerInt = null; }
   appEl.style.display = 'none';
   homeEl.classList.remove('hidden');
@@ -679,9 +692,11 @@ function showApp() {
   else updateTimer();
   if (!timerInt) timerInt = setInterval(updateTimer, 1000);
   
-  const isHost = !new URLSearchParams(window.location.search).get('id');
-  if (m && isHost && m.shareEnabled) {
+  const isGuest = m && shareId === m.id && guestMeetingIds().includes(m.id);
+  if (m && !isGuest && m.shareEnabled) {
     initP2P(m, true);
+  } else if (!isGuest) {
+    stopP2P();
   }
   if (document.body.classList.contains('role-viewer')) {
     const micBtn = document.getElementById('topbarMicBtn');
@@ -717,6 +732,8 @@ groupsEl.addEventListener('click', e => {
 });
 
 function openMeeting(id) {
+  // A cached guest copy is not an owned meeting and must be reopened via its link.
+  if (guestMeetingIds().includes(id)) return;
   const m = state.meetings.find(x => x.id === id); if (!m) return;
   state.currentId = id;
   m.lastOpenedAt = new Date().toISOString();
@@ -853,7 +870,7 @@ function renderTeams() {
     return;
   }
   list.innerHTML = state.teams.map(t => `
-    <div class="team-card" data-id="${t.id}">
+    <div class="team-card" data-id="${escapeAttr(t.id)}">
       <div class="team-name">${escapeHTML(t.name)}</div>
       ${t.description ? `<div class="team-desc">${escapeHTML(t.description)}</div>` : ''}
       <div class="team-meta">
@@ -1009,7 +1026,7 @@ function populateVisibilityDropdown() {
     const currentVal = sel.value;
     sel.innerHTML = '<option value="private">Private (Only me)</option>';
     (state.teams || []).forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">Share with: ${escapeHTML(t.name)}</option>`;
+      sel.innerHTML += `<option value="${escapeAttr(t.id)}">Share with: ${escapeHTML(t.name)}</option>`;
     });
     // Try to restore previous value if it exists in the new options
     if (Array.from(sel.options).some(o => o.value === currentVal)) {
@@ -1047,9 +1064,7 @@ $('#shareToggle')?.addEventListener('change', (e) => {
   if (m.shareEnabled) {
     initP2P(m, true);
   } else {
-    cancelPeerSetup();
-    stopHttpPolling();
-    if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
+    stopP2P();
   }
 });
 function updateShareLinks(m) {
@@ -1076,65 +1091,9 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 
 
 
-/* ==================== HTTP SYNC FALLBACK (Messenger/Firewall Bypass) ==================== */
-let httpSyncInterval = null;
-let httpSyncVersion = 0;
+// Shared meetings use the live PeerJS connection. The old in-memory HTTP relay
+// cannot authenticate or reliably revoke snapshots and must not be used for sync.
 let guestSyncTimer = null;
-window.httpConnected = false;
-
-function stopHttpPolling() {
-  httpSyncVersion++;
-  clearInterval(httpSyncInterval);
-  httpSyncInterval = null;
-  window.httpConnected = false;
-}
-
-function startHttpPolling(m, isHost) {
-  stopHttpPolling();
-  const version = httpSyncVersion;
-
-  const syncFn = async () => {
-    const localM = state.meetings.find(meeting => meeting.id === m.id);
-    if (isHost && (!localM || !localM.shareEnabled)) return;
-    try {
-      // A guest has no local meeting yet, so poll by the shared ID rather than cm().
-      const res = await fetch('/api/sync?id=' + encodeURIComponent(m.id));
-      if (version !== httpSyncVersion) return;
-      if (res.ok) {
-        const serverM = await res.json();
-        if (version !== httpSyncVersion || !serverM || serverM.id !== m.id) return;
-        // The peer may have delivered a newer copy while the request was in flight.
-        const latestLocalM = state.meetings.find(meeting => meeting.id === m.id);
-        window.httpConnected = true;
-
-        const initialGuestLoad = !isHost && !!document.getElementById('syncLoader');
-        if (!latestLocalM || (serverM.lastUpdated || 0) > (latestLocalM.lastUpdated || 0) ||
-            (initialGuestLoad && (serverM.lastUpdated || 0) === (latestLocalM.lastUpdated || 0))) {
-          const idx = state.meetings.findIndex(x => x.id === serverM.id);
-          const meeting = normalizeMeeting(serverM);
-          if (idx > -1) state.meetings[idx] = meeting;
-          else state.meetings.push(meeting);
-          state.lastUpdated = serverM.lastUpdated;
-          originalSaveImmediate();
-          refreshUI();
-          renderAvatars();
-        } else if ((latestLocalM.lastUpdated || 0) > (serverM.lastUpdated || 0)) {
-          if (!document.body.classList.contains('role-viewer')) {
-            fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: latestLocalM.id, meeting: latestLocalM }), headers: {'Content-Type': 'application/json'} }).catch(() => {});
-          }
-          if (initialGuestLoad) refreshUI();
-        }
-      } else if (res.status === 404 && isHost && localM) {
-        fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(() => {});
-      }
-    } catch (e) {
-      console.warn('HTTP Sync error:', e);
-    }
-  };
-
-  syncFn();
-  httpSyncInterval = setInterval(syncFn, 3000);
-}
 
 function showGuestWaiting() {
   const loader = document.getElementById('syncLoader');
@@ -1158,6 +1117,7 @@ let peer = null;
 let p2pConns = [];
 let hostConn = null;
 let peerLoadTimer = null;
+let peerLoadListener = null;
 let peerSetupVersion = 0;
 
 
@@ -1174,21 +1134,38 @@ function cancelPeerSetup() {
   peerSetupVersion++;
   clearTimeout(peerLoadTimer);
   peerLoadTimer = null;
+  if (peerLoadListener) document.getElementById('peerScript')?.removeEventListener('load', peerLoadListener);
+  peerLoadListener = null;
+}
+
+function stopP2P() {
+  cancelPeerSetup();
+  if (peer) peer.destroy();
+  peer = null;
+  p2pConns = [];
+  hostConn = null;
 }
 
 function initP2P(m, isHost) {
-  cancelPeerSetup();
-  startHttpPolling(m, isHost);
+  stopP2P();
   const version = peerSetupVersion;
   const deadline = Date.now() + 8000;
 
   function waitForPeer() {
-    if (version !== peerSetupVersion) return;
+    if (version !== peerSetupVersion || state.currentId !== m.id) return;
+    if (isHost && (!cm() || !cm().shareEnabled)) return;
     if (typeof Peer === 'undefined') {
       if (Date.now() < deadline) {
         peerLoadTimer = setTimeout(waitForPeer, 200);
-      } else if (isHost) {
-        showAuthToast('Live sync could not be loaded. Check your connection and try sharing again.');
+      } else {
+        // A slow CDN may finish after the initial timeout. Continue if it does,
+        // unless the user has left the meeting or disabled sharing in the meantime.
+        const script = document.getElementById('peerScript');
+        if (script && !peerLoadListener) {
+          peerLoadListener = () => { peerLoadListener = null; waitForPeer(); };
+          script.addEventListener('load', peerLoadListener, { once: true });
+        }
+        if (isHost) showAuthToast('Live sync could not be loaded. Check your connection and try sharing again.');
       }
       return;
     }
@@ -1240,13 +1217,15 @@ function connectP2P(m, isHost) {
         }
       });
       conn.on('data', (data) => {
-        if (data.type === 'REQUEST_STATE') {
-          conn.send({ type: 'STATE_PAYLOAD', meeting: cm() });
+        const current = cm();
+        if (!current || current.id !== m.id || !current.shareEnabled || !data) return;
+        if (data.type === 'REQUEST_STATE' && data.id === m.id) {
+          conn.send({ type: 'STATE_PAYLOAD', meeting: current });
         }
-        if (data.type === 'UPDATE' && data.state) {
-          handleIncomingUpdate(data.state);
-          // Bounce to other connected viewers
-          p2pConns.forEach(c => { if(c !== conn && c.open) c.send(data); });
+        if (data.type === 'UPDATE' && data.state && handleIncomingUpdate(data.state)) {
+          // Never forward another user's unrelated meetings or teams.
+          const update = { type: 'UPDATE', state: { meetings: [cm()] } };
+          p2pConns.forEach(c => { if (c !== conn && c.open) c.send(update); });
         }
       });
       conn.on('close', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
@@ -1273,13 +1252,10 @@ function connectP2P(m, isHost) {
         renderAvatars();
       });
       hostConn.on('data', (data) => {
+        if (!data) return;
         if (data.type === 'STATE_PAYLOAD' && data.meeting && data.meeting.id === m.id) {
-          const idx = state.meetings.findIndex(x => x.id === data.meeting.id);
-          const meeting = normalizeMeeting(data.meeting);
-          if (idx > -1) state.meetings[idx] = meeting;
-          else state.meetings.push(meeting);
-          originalSaveImmediate();
-          refreshUI();
+          // A late, older snapshot must not replace a newer copy already received.
+          if (!acceptMeetingSnapshot(data.meeting)) refreshUI();
         }
         if (data.type === 'UPDATE' && data.state) {
           handleIncomingUpdate(data.state);
@@ -1297,34 +1273,40 @@ function connectP2P(m, isHost) {
   }
 }
 
-function handleIncomingUpdate(incomingState) {
-  if ((incomingState.lastUpdated || 0) < (state.lastUpdated || 0)) return; // Discard old overwrites
-  state = Object.assign(state, incomingState);
-  state.meetings = (state.meetings || []).map(normalizeMeeting);
+function acceptMeetingSnapshot(incoming) {
+  if (!incoming || typeof incoming !== 'object' || incoming.id !== state.currentId) return false;
+  const index = state.meetings.findIndex(meeting => meeting.id === incoming.id);
+  const local = index >= 0 ? state.meetings[index] : null;
+  const localRevision = Number(local?.lastUpdated) || 0;
+  const incomingRevision = Number(incoming.lastUpdated) || 0;
+  if (localRevision && incomingRevision && incomingRevision < localRevision) return false;
+  const meeting = normalizeMeeting(incoming);
+  if (index >= 0) state.meetings[index] = meeting;
+  else state.meetings.push(meeting);
   originalSaveImmediate();
   refreshUI();
+  return true;
+}
+
+function handleIncomingUpdate(incomingState) {
+  if (!incomingState || !Array.isArray(incomingState.meetings)) return false;
+  const meeting = incomingState.meetings.find(m => m && m.id === state.currentId);
+  // Replace only the meeting being shared, never the user's entire local state.
+  return acceptMeetingSnapshot(meeting);
 }
 
 function broadcastUpdate() {
   if (document.body.classList.contains('role-viewer')) return;
-  const payload = { type: 'UPDATE', state: state };
+  const current = cm();
+  if (!current || !current.shareEnabled) return;
+  // Do not send other local meetings, teams, or settings to collaborators.
+  const payload = { type: 'UPDATE', state: { meetings: [current] } };
   if (hostConn && hostConn.open) {
     hostConn.send(payload);
   } else {
-    p2pConns.forEach(c => { if(c.open) c.send(payload); });
-  }
-  
-  // Instant HTTP Fallback push
-  const currentM = cm();
-  if (currentM && currentM.shareEnabled) {
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: currentM.id, meeting: currentM })
-    }).catch(()=>{});
+    p2pConns.forEach(c => { if (c.open) c.send(payload); });
   }
 }
-
 
 function safeUpdateVal(elId, val) {
   const el = document.getElementById(elId);
@@ -1497,7 +1479,7 @@ const MEETING_TEMPLATES = {
 
 function injectPreMeetingBrief(newMeeting) {
   // Find all past meetings with the exact same title
-  const pastMeetings = state.meetings.filter(m => m.title.toLowerCase() === newMeeting.title.toLowerCase() && m.id !== newMeeting.id);
+  const pastMeetings = ownedMeetings().filter(m => m.title.toLowerCase() === newMeeting.title.toLowerCase() && m.id !== newMeeting.id);
   
   let pendingTasks = [];
   pastMeetings.forEach(m => {
@@ -1698,8 +1680,8 @@ function renderAgenda() {
         <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="8" cy="2" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="8" cy="12" r="1.2"/></svg>
       </span>
       <span class="agenda-index">${idx + 1}</span>
-      <span class="agenda-title" data-id="${item.id}">${escapeHTML(item.title || 'Untitled')}</span>
-      <span class="agenda-meta">${item.limitMin ? item.limitMin+'m' : ''}</span>
+      <span class="agenda-title" data-id="${escapeAttr(item.id)}">${escapeHTML(item.title || 'Untitled')}</span>
+      <span class="agenda-meta">${item.limitMin ? escapeHTML(item.limitMin)+'m' : ''}</span>
       <span class="agenda-actions">
         <button class="mini-btn" data-act="edit" title="Rename" aria-label="Rename topic">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
@@ -1772,7 +1754,7 @@ function bindFocusTitle() {
     const item = activeItem(); if (!item) return;
     item.title = t.textContent.trim();
     save();
-    const side = agendaListEl.querySelector(`.agenda-title[data-id="${item.id}"]`);
+    const side = agendaListEl.querySelector(`.agenda-title[data-id="${CSS.escape(String(item.id))}"]`);
     if (side) side.textContent = item.title || 'Untitled';
   });
   t.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } });
@@ -2061,7 +2043,7 @@ function taskCard(t, showTopic=false) {
         <div class="action-name">${escapeHTML(t.name)}</div>
         ${meta ? `<div class="action-meta">${meta}</div>` : ''}
       </div>
-      <span class="status-pill ${t.status}">${t.status}</span>
+      <span class="status-pill ${escapeAttr(t.status)}">${escapeHTML(t.status)}</span>
       <button class="delete-btn" data-act="del" title="Delete task">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
@@ -2115,7 +2097,7 @@ function renderExpand(t) {
             Notes for this task slide in on the left ←
           </span>
         </div>
-        <select class="status-select" data-task="${t.id}" data-field="status">
+        <select class="status-select" data-task="${escapeAttr(t.id)}" data-field="status">
           <option value="ongoing"   ${t.status==='ongoing'?'selected':''}>Ongoing</option>
           <option value="done"      ${t.status==='done'?'selected':''}>Done</option>
           <option value="abandoned" ${t.status==='abandoned'?'selected':''}>Abandoned</option>
@@ -2126,10 +2108,10 @@ function renderExpand(t) {
           <span>Links &amp; Attachments</span>
           <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">${links.length} item${links.length===1?'':'s'}</span>
         </div>
-        <div class="links-list" id="links-${t.id}">
+        <div class="links-list" id="links-${escapeAttr(t.id)}">
           ${links.length ? links.map(l => linkRowHTML(t.id, l)).join('') : '<div class="empty-list" style="padding:8px;">No links yet.</div>'}
         </div>
-        <div class="link-form" data-task="${t.id}">
+        <div class="link-form" data-task="${escapeAttr(t.id)}">
           <input data-link-field="label" placeholder="Label (optional)" />
           <input data-link-field="url" placeholder="URL or /path/to/folder" />
           <button data-link-add>+ Add</button>
@@ -2148,7 +2130,7 @@ function linkRowHTML(taskId, l) {
   const display = l.label && l.label.trim() ? l.label : (local ? linkDisplay(href) : (linkHostname(href) || href));
   const sub = local ? linkDisplay(href) : href;
   return `
-    <div class="link-row" data-link-id="${l.id}" data-task="${taskId}">
+    <div class="link-row" data-link-id="${escapeAttr(l.id)}" data-task="${escapeAttr(taskId)}">
       <span class="link-icon" title="${local ? 'Local folder/file' : 'Web link'}">
         ${local
           ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
@@ -2172,10 +2154,10 @@ function linkRowHTML(taskId, l) {
 
 function wireExpand(cardEl, t) {
   const m = cm();
-  const sel = cardEl.querySelector(`select[data-task="${t.id}"]`);
+  const sel = cardEl.querySelector(`select[data-task="${CSS.escape(String(t.id))}"]`);
   sel?.addEventListener('change', () => { t.status = sel.value; save(); renderActions(); });
 
-  const form = cardEl.querySelector(`.link-form[data-task="${t.id}"]`);
+  const form = cardEl.querySelector(`.link-form[data-task="${CSS.escape(String(t.id))}"]`);
   const labelInp = form?.querySelector('[data-link-field="label"]');
   const urlInp   = form?.querySelector('[data-link-field="url"]');
   const addBtn   = form?.querySelector('[data-link-add]');
@@ -2288,7 +2270,7 @@ agendaListEl.addEventListener('keydown', e => {
     save(); renderAgenda(); renderFocus(true);
     slideTaskNotesOut();
     // Keep focus on the corresponding row after re-render
-    const again = agendaListEl.querySelector(`.agenda-item[data-id="${id}"]`);
+    const again = agendaListEl.querySelector(`.agenda-item[data-id="${CSS.escape(String(id))}"]`);
     again?.focus();
   }
 });
@@ -2771,8 +2753,8 @@ function exportPDF() {
         html += `
           <div class="pr-task">
             <div class="pr-task-head">
-              <span class="pr-task-name ${t.status}">${escapeHTML(t.name)}</span>
-              <span class="pr-status ${t.status}">${t.status}</span>
+              <span class="pr-task-name ${escapeAttr(t.status)}">${escapeHTML(t.name)}</span>
+              <span class="pr-status ${escapeAttr(t.status)}">${escapeHTML(t.status)}</span>
             </div>
             ${metaParts.length ? `<div class="pr-task-meta">${metaParts.join(' · ')}</div>` : ''}
             ${t.notes && t.notes.trim() ? `<div class="pr-task-notes">${escapeHTML(t.notes)}</div>` : ''}
@@ -2818,8 +2800,8 @@ function exportPDF() {
       html += `
         <div class="pr-task">
           <div class="pr-task-head">
-            <span class="pr-task-name ${t.status}">${escapeHTML(t.name)}</span>
-            <span class="pr-status ${t.status}">${t.status}</span>
+            <span class="pr-task-name ${escapeAttr(t.status)}">${escapeHTML(t.name)}</span>
+            <span class="pr-status ${escapeAttr(t.status)}">${escapeHTML(t.status)}</span>
           </div>
           ${metaParts.length ? `<div class="pr-task-meta">${metaParts.join(' · ')}</div>` : ''}
           ${t.notes && t.notes.trim() ? `<div class="pr-task-notes">${escapeHTML(t.notes)}</div>` : ''}

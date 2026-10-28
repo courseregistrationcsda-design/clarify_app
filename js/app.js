@@ -37,7 +37,7 @@ document.getElementById('navToLoginFromGuestBtn')?.addEventListener('click', () 
 
 document.getElementById('joinGuestBtn')?.addEventListener('click', (e) => {
   const link = document.getElementById('guestLinkInput').value.trim();
-  if (!link) return alert('Please enter a valid shared meeting link or ID.');
+  if (!link) return showAuthToast('Please enter a valid shared meeting link or ID.');
   
   const btn = e.target;
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Connecting...';
@@ -73,7 +73,7 @@ document.getElementById('joinGuestBtn')?.addEventListener('click', (e) => {
 });
 
 
-let currentResetCode = null;
+
 
 function showAuthToast(msg, duration=5000) {
   const toast = document.getElementById('authToast');
@@ -83,13 +83,13 @@ function showAuthToast(msg, duration=5000) {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), duration);
   } else {
-    alert(msg.replace(/<[^>]*>?/gm, ''));
+    showAuthToast(msg.replace(/<[^>]*>?/gm, ''));
   }
 }
 
 async function handleSendCode(btnElement) {
   const email = document.getElementById('forgotEmail').value.trim();
-  if (!email) return alert('Please enter your email address.');
+  if (!email) return showAuthToast('Please enter your email address.');
   
   btnElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Sending...';
   btnElement.disabled = true;
@@ -112,15 +112,20 @@ async function handleSendCode(btnElement) {
       showAuthToast('Reset code sent to your email!');
     } else {
       const err = await res.json();
-      alert(err.error || "Failed to send reset code.");
+      showAuthToast(err.error || "Failed to send reset code.");
     }
   } catch (e) {
-    alert("Network error. Could not reach the server.");
+    showAuthToast("Network error. Could not reach the server.");
   }
   
   btnElement.innerHTML = btnElement.id === 'sendCodeBtn' ? 'Send Reset Code' : 'Resend Code';
   btnElement.disabled = false;
 }
+
+
+document.getElementById('navToSignupBtn')?.addEventListener('click', () => {
+  showAuthToast("Account creation is currently invite-only in this beta. Please join as a Guest.");
+});
 
 // Forgot Password - Step 1: Send Code
 document.getElementById('sendCodeBtn')?.addEventListener('click', (e) => handleSendCode(e.target));
@@ -131,12 +136,8 @@ document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
   const code = document.getElementById('resetCode').value.trim();
   const newPass = document.getElementById('newPass').value.trim();
   
-  if (code !== currentResetCode) {
-    alert('Invalid or expired reset code.');
-    return;
-  }
-  if (newPass.length < 6) {
-    alert('Password must be at least 6 characters.');
+  if (newPass.length < 8) {
+    showAuthToast('Password must be at least 8 characters.');
     return;
   }
   
@@ -145,6 +146,21 @@ document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
   requestAnimationFrame(() => {
     btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Resetting...';
     btn.disabled = true;
+    
+    const email = document.getElementById('forgotEmail').value.trim();
+    
+    fetch('/api/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, newPass })
+    }).then(res => res.json()).then(data => {
+      if (data.error) {
+        showAuthToast(data.error);
+        btn.innerHTML = 'Reset Password & Login';
+        btn.disabled = false;
+        return;
+      }
+
     
     // Simulate password update in database
     setTimeout(() => {
@@ -159,7 +175,11 @@ document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
         saveImmediate();
         renderHome();
       });
-    }, 1200);
+    }).catch(err => {
+      showAuthToast("Network error during reset.");
+      btn.innerHTML = 'Reset Password & Login';
+      btn.disabled = false;
+    });
   });
 });
 
@@ -230,7 +250,7 @@ voiceOrb?.addEventListener('click', () => {
   if (orbRecog) {
     try { orbRecog.start(); } catch(e) {}
   } else {
-    alert("Voice UI not supported in this browser.");
+    showAuthToast("Voice UI not supported in this browser.");
   }
 });
 
@@ -1040,7 +1060,7 @@ $('#teamEmailInput').addEventListener('keydown', e => {
 
 $('#saveTeamBtn').addEventListener('click', () => {
   const name = $('#teamNameInput').value.trim();
-  if (!name) return alert('Team name is required');
+  if (!name) return showAuthToast('Team name is required');
   
   state.teams = state.teams || [];
   if (editingTeamId) {
@@ -1214,7 +1234,7 @@ function initP2P(m, isHost) {
   }
   
   if (!window.RTCPeerConnection) {
-    alert("Warning: Your browser or app (like Messenger) is blocking Live Sync. Please open this link in standard Safari or Chrome.");
+    showAuthToast("Warning: Your browser or app (like Messenger) is blocking Live Sync. Please open this link in standard Safari or Chrome.");
   }
   
   if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
@@ -2350,7 +2370,7 @@ $('#taskOwner').addEventListener('keydown', e => { if (e.key==='Enter') addTask(
 function addTask() {
   const m = cm(); if (!m) return;
   const name = $('#taskName').value.trim(); if (!name) return;
-  if (!m.activeId) { alert('Please select an agenda item first.'); return; }
+  if (!m.activeId) { showAuthToast('Please select an agenda item first.'); return; }
   m.tasks.push({
     id: uid(), name,
     owner: $('#taskOwner').value.trim(),
@@ -2626,7 +2646,7 @@ exportMenu.addEventListener('click', (e) => {
 });
 
 $('#exportNotesBtn').addEventListener('click', () => {
-  const item = activeItem(); if (!item) return alert('No active topic.');
+  const item = activeItem(); if (!item) return showAuthToast('No active topic.');
   const text = `# ${item.title}\n\n${item.notes || '(no notes)'}\n`;
   download(text, `notes-${slug(item.title)}.txt`);
 });
@@ -2634,7 +2654,7 @@ $('#exportTasksBtn').addEventListener('click', exportCSV);
 
 function exportCSV() {
   const m = cm(); if (!m) return;
-  if (!m.tasks.length) return alert('No tasks yet.');
+  if (!m.tasks.length) return showAuthToast('No tasks yet.');
   const rows = [['Task','Owner','Due','Status','Topic','Notes','Links']];
   m.tasks.forEach(t => {
     const item = m.items.find(i => i.id === t.itemId);
@@ -2892,7 +2912,7 @@ if (shareId) {
   try { localStorage.setItem('test', '1'); localStorage.removeItem('test'); } catch(e) { storageWorks = false; }
   
   if (!storageWorks && !shareId) {
-    alert("Warning: You are using an in-app browser or strict privacy mode that blocks Local Storage. Your meetings will NOT be saved. Please open this app in Chrome or Safari.");
+    showAuthToast("Warning: You are using an in-app browser or strict privacy mode that blocks Local Storage. Your meetings will NOT be saved. Please open this app in Chrome or Safari.");
   }
 
   if (!currentUser) {
@@ -2968,7 +2988,7 @@ function initSpeechRecognition() {
   r.onerror = (event) => { 
     console.warn("Speech recognition error:", event.error); 
     if (event.error === 'not-allowed') {
-      alert("Microphone access blocked. Please allow mic permissions in your browser.");
+      showAuthToast("Microphone access blocked. Please allow mic permissions in your browser.");
       toggleMic(false);
     }
   };
@@ -3013,7 +3033,7 @@ function toggleMic(forceState) {
   if (!recognition) {
     recognition = initSpeechRecognition();
     if (!recognition) {
-      alert("Speech recognition is not supported in this browser. Please use Google Chrome or Safari.");
+      showAuthToast("Speech recognition is not supported in this browser. Please use Google Chrome or Safari.");
       return;
     }
   }
@@ -3081,7 +3101,7 @@ async function toggleVideo() {
     
   } catch (err) {
     console.error("Camera error:", err);
-    alert("Camera access denied or unavailable.");
+    showAuthToast("Camera access denied or unavailable.");
   }
 }
 
@@ -3300,7 +3320,7 @@ async function toggleTabAudio() {
     // Check if user actually shared audio
     if (stream.getAudioTracks().length === 0) {
       stream.getTracks().forEach(t => t.stop());
-      alert("You must check 'Share tab audio' in the browser prompt to use this feature!");
+      showAuthToast("You must check 'Share tab audio' in the browser prompt to use this feature!");
       return;
     }
     

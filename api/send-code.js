@@ -42,7 +42,7 @@ export default async function handler(req) {
     }
 
     // Return the code to the frontend for local validation
-    return new Response(JSON.stringify({ success: true, code: code }), { 
+    return new Response(JSON.stringify({ success: true }), { 
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
 

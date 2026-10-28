@@ -19,15 +19,15 @@
   <div class="auth-card" id="authLoginView">
     <div class="auth-logo"><span class="brand-dot"></span> Clarify</div>
     <div class="auth-sub">Sign in to your workspace</div>
-    <input type="email" class="auth-input" placeholder="name@company.com" id="loginEmail" />
-    <input type="password" class="auth-input" placeholder="Password" id="loginPass" />
+    <input type="email" class="auth-input" placeholder="name@company.com" id="loginEmail" aria-label="Email address" />
+    <input type="password" class="auth-input" placeholder="Password" id="loginPass" aria-label="Password" />
     <button class="auth-btn" id="loginBtn">Sign In</button>
     <div class="auth-footer">
-      <span class="auth-link" id="navToForgotBtn">Forgot password?</span>
-      <span class="auth-link" style="color:var(--accent);">Create account</span>
+      <span class="auth-link" role="button" tabindex="0" id="navToForgotBtn">Forgot password?</span>
+      <span class="auth-link" id="navToSignupBtn" style="color:var(--accent);" role="button" tabindex="0">Create account</span>
     </div>
     <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border);">
-      <span class="auth-link" id="navToGuestBtn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+      <span class="auth-link" role="button" tabindex="0" id="navToGuestBtn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         Continue as Guest
       </span>
@@ -40,11 +40,11 @@
     <div class="auth-logo"><span class="brand-dot" style="background:var(--success);"></span> Guest Access</div>
     <div class="auth-sub">Enter your shared meeting link or ID to join.</div>
     
-    <input type="text" class="auth-input" placeholder="e.g. clarify.com/?id=xyz&role=viewer" id="guestLinkInput" />
+    <input type="text" class="auth-input" placeholder="e.g. clarify.com/?id=xyz&role=viewer" id="guestLinkInput" aria-label="Guest meeting link or ID" />
     <button class="auth-btn" id="joinGuestBtn">Join Meeting</button>
 
     <div class="auth-footer" style="justify-content: center; margin-top: 16px;">
-      <span class="auth-link" id="navToLoginFromGuestBtn">← Back to log in</span>
+      <span class="auth-link" role="button" tabindex="0" id="navToLoginFromGuestBtn">← Back to log in</span>
     </div>
   </div>
 
@@ -55,22 +55,22 @@
     
     <!-- Step 1: Request Code -->
     <div id="forgotStep1">
-      <input type="email" class="auth-input" placeholder="name@company.com" id="forgotEmail" />
+      <input type="email" class="auth-input" placeholder="name@company.com" id="forgotEmail" aria-label="Email address for reset" />
       <button class="auth-btn" id="sendCodeBtn">Send Reset Code</button>
     </div>
     
     <!-- Step 2: Enter Code & New Password -->
     <div id="forgotStep2" style="display: none;">
-      <input type="text" class="auth-input" placeholder="6-digit code" id="resetCode" maxlength="6" style="letter-spacing: 0.5em; text-align: center; font-weight: 600;" />
-      <input type="password" class="auth-input" placeholder="New Password" id="newPass" />
+      <input type="text" class="auth-input" placeholder="6-digit code" id="resetCode" aria-label="6-digit reset code" maxlength="6" style="letter-spacing: 0.5em; text-align: center; font-weight: 600;" />
+      <input type="password" class="auth-input" placeholder="New Password" id="newPass" aria-label="New Password" />
       <button class="auth-btn" id="resetPassBtn">Reset Password & Login</button>
       <div style="text-align:center; margin-top:8px;">
-        <span class="auth-link" id="resendCodeBtn" style="font-size:12px;">Didn't receive it? Resend Code</span>
+        <span class="auth-link" role="button" tabindex="0" id="resendCodeBtn" style="font-size:12px;">Didn't receive it? Resend Code</span>
       </div>
     </div>
 
     <div class="auth-footer" style="justify-content: center; margin-top: 16px;">
-      <span class="auth-link" id="navToLoginBtn">← Back to log in</span>
+      <span class="auth-link" role="button" tabindex="0" id="navToLoginBtn">← Back to log in</span>
     </div>
   </div>
 
@@ -303,7 +303,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <div class="meeting-title" id="meetingTitleDisplay" contenteditable="true" spellcheck="false"
+      <div class="meeting-title" id="meetingTitleDisplay" aria-label="Meeting Title" role="textbox" contenteditable="true" spellcheck="false"
            data-placeholder="Untitled meeting"></div>
       <div class="meeting-date" id="meetingDateDisplay"></div>
     </div>

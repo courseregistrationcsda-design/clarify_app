@@ -17,6 +17,8 @@ Clarify is a lightweight Single-Page Application (SPA) natively optimized for **
 *   **Database / Storage:** Browser \`localStorage\` (with volatile in-memory fallback for iframe/restricted environments).
 *   **AI Integration:** OpenAI API (GPT-4o-mini for enhancement, Whisper for transcription).
 
+**Prototype access limitation:** The frontend opens a local workspace and does not implement account authentication or password recovery. The existing email/reset endpoints are prototypes, not a secure account system. Meetings stored in the browser are not protected by a login. The optional in-memory HTTP sync relay is also unauthenticated; do not use it for sensitive data.
+
 ### Folder Structure
 \`\`\`text
 clarify-vercel-deploy/

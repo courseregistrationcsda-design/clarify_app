@@ -1,192 +1,93 @@
 
-/* ==================== AUTHENTICATION & PASSWORD RESET ==================== */
+/* ==================== LOCAL / GUEST ACCESS ==================== */
 const authScreen = document.getElementById('authScreen');
 const authLoginView = document.getElementById('authLoginView');
-const authForgotView = document.getElementById('authForgotView');
-
-const forgotStep1 = document.getElementById('forgotStep1');
-const forgotStep2 = document.getElementById('forgotStep2');
-const forgotSubtitle = document.getElementById('forgotSubtitle');
-
-// Navigation
-document.getElementById('navToForgotBtn')?.addEventListener('click', () => {
-  authLoginView.style.display = 'none';
-  authForgotView.style.display = 'block';
-  forgotStep1.style.display = 'block';
-  forgotStep2.style.display = 'none';
-  forgotSubtitle.textContent = 'Enter your email to receive a 6-digit reset code.';
-});
-
-document.getElementById('navToLoginBtn')?.addEventListener('click', () => {
-  authForgotView.style.display = 'none';
-  authLoginView.style.display = 'block';
-});
-
-
 const authGuestView = document.getElementById('authGuestView');
+const guestLinkInput = document.getElementById('guestLinkInput');
 
-document.getElementById('navToGuestBtn')?.addEventListener('click', () => {
-  authLoginView.style.display = 'none';
-  authGuestView.style.display = 'block';
-});
-
-document.getElementById('navToLoginFromGuestBtn')?.addEventListener('click', () => {
-  authGuestView.style.display = 'none';
-  authLoginView.style.display = 'block';
-});
-
-document.getElementById('joinGuestBtn')?.addEventListener('click', (e) => {
-  const link = document.getElementById('guestLinkInput').value.trim();
-  if (!link) return showAuthToast('Please enter a valid shared meeting link or ID.');
-  
-  const btn = e.target;
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Connecting...';
-  btn.disabled = true;
-  
-  setTimeout(() => {
-      try { localStorage.setItem('clarify_user', email); } catch(e) {}
-      authScreen.classList.remove('show');
-      
-      // Fix Blank Screen Bug: Ensure Home layout is visible before rendering
-      const homeScreen = document.getElementById('homeScreen');
-      if (homeScreen) homeScreen.classList.remove('hidden');
-      const appWrap = document.getElementById('app');
-      if (appWrap) appWrap.style.display = 'none';
-      
-      btn.innerHTML = 'Sign In';
-      btn.disabled = false;
-      
-      queueMicrotask(() => {
-        saveImmediate();
-      renderHome();
-      
-      // If it's a completely new user, show the splash screen
-      if (!state.meetings.length) {
-        introDismissed = false; // Reset the flag so it doesn't freeze!
-        document.getElementById('homeScreen').classList.add('intro-active');
-        document.getElementById('introSplash').classList.remove('hidden');
-        introTimer = setTimeout(() => dismissIntro(), 3000);
-      }
-    });
-  }, 1200);
-  });
-});
-
-
-
-
-function showAuthToast(msg, duration=5000) {
+let authToastTimer = null;
+function showAuthToast(msg, duration = 5000) {
   const toast = document.getElementById('authToast');
   const text = document.getElementById('authToastText');
-  if(toast && text) {
-    text.innerHTML = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), duration);
-  } else {
-    showAuthToast(msg.replace(/<[^>]*>?/gm, ''));
-  }
-}
-
-async function handleSendCode(btnElement) {
-  const email = document.getElementById('forgotEmail').value.trim();
-  if (!email) return showAuthToast('Please enter your email address.');
-  
-  btnElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Sending...';
-  btnElement.disabled = true;
-  
-  try {
-    const res = await fetch('/api/send-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      currentResetCode = data.code; 
-      
-      forgotStep1.style.display = 'none';
-      forgotStep2.style.display = 'block';
-      forgotSubtitle.innerHTML = `We sent a secure code to <strong>${email}</strong>.<br>Please enter it below.`;
-      
-      showAuthToast('Reset code sent to your email!');
-    } else {
-      const err = await res.json();
-      showAuthToast(err.error || "Failed to send reset code.");
-    }
-  } catch (e) {
-    showAuthToast("Network error. Could not reach the server.");
-  }
-  
-  btnElement.innerHTML = btnElement.id === 'sendCodeBtn' ? 'Send Reset Code' : 'Resend Code';
-  btnElement.disabled = false;
-}
-
-
-document.getElementById('navToSignupBtn')?.addEventListener('click', () => {
-  showAuthToast("Account creation is currently invite-only in this beta. Please join as a Guest.");
-});
-
-// Forgot Password - Step 1: Send Code
-document.getElementById('sendCodeBtn')?.addEventListener('click', (e) => handleSendCode(e.target));
-document.getElementById('resendCodeBtn')?.addEventListener('click', (e) => handleSendCode(e.target));
-
-// Forgot Password - Step 2: Reset & Login
-document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
-  const code = document.getElementById('resetCode').value.trim();
-  const newPass = document.getElementById('newPass').value.trim();
-  
-  if (newPass.length < 8) {
-    showAuthToast('Password must be at least 8 characters.');
+  if (!toast || !text) {
+    console.warn(msg);
     return;
   }
-  
-  const btn = e.target;
-  
-  requestAnimationFrame(() => {
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Resetting...';
-    btn.disabled = true;
-    
-    const email = document.getElementById('forgotEmail').value.trim();
-    
-    fetch('/api/verify-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, newPass })
-    }).then(res => res.json()).then(data => {
-      if (data.error) {
-        showAuthToast(data.error);
-        btn.innerHTML = 'Reset Password & Login';
-        btn.disabled = false;
-        return;
-      }
+  text.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(authToastTimer);
+  authToastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+}
 
-    
-    // Simulate password update in database
-    setTimeout(() => {
-      const email = document.getElementById('forgotEmail').value.trim();
-      try { localStorage.setItem('clarify_user', email); } catch(e) {} // Auto-login after reset
-      authScreen.classList.remove('show');
-      
-      btn.innerHTML = 'Reset Password & Login';
-      btn.disabled = false;
-      
-      queueMicrotask(() => {
-        saveImmediate();
-        renderHome();
-      });
-    }).catch(err => {
-      showAuthToast("Network error during reset.");
-      btn.innerHTML = 'Reset Password & Login';
-      btn.disabled = false;
-    });
-  });
+document.getElementById('continueLocalBtn').addEventListener('click', () => {
+  // This app stores meetings locally; it does not have an account backend.
+  setStorage('local', 'clarify_user');
+  currentUser = 'local';
+  authScreen.classList.remove('show');
+  dismissIntro();
+
+  // If the user opened a link to a meeting already on this device, resume it.
+  if (shareId && state.meetings.some(m => m.id === shareId)) {
+    state.currentId = shareId;
+    showApp();
+  } else {
+    state.currentId = null;
+    appEl.style.display = 'none';
+    homeEl.classList.remove('hidden');
+    saveImmediate();
+    renderHome();
+  }
+
+  if (!storageAvailable) {
+    showAuthToast('Browser storage is unavailable. Your meetings will only last until this page is closed.');
+  }
 });
 
-// Logout
-// Logout
+document.getElementById('navToGuestBtn').addEventListener('click', () => {
+  authLoginView.style.display = 'none';
+  authGuestView.style.display = 'block';
+  guestLinkInput.focus();
+});
+
+document.getElementById('navToLoginFromGuestBtn').addEventListener('click', () => {
+  authGuestView.style.display = 'none';
+  authLoginView.style.display = 'block';
+  document.getElementById('navToGuestBtn').focus();
+});
+
+function parseSharedMeetingLink(value) {
+  const validId = /^[a-zA-Z0-9_-]{1,128}$/;
+  if (!value) return null;
+  if (validId.test(value)) return { id: value, role: 'viewer' };
+  try {
+    const url = new URL(value, window.location.href);
+    const id = url.searchParams.get('id');
+    const role = url.searchParams.get('role') || 'viewer';
+    if (!['http:', 'https:'].includes(url.protocol) || !id || !validId.test(id) || !['viewer', 'editor'].includes(role)) return null;
+    return { id, role };
+  } catch {
+    return null;
+  }
+}
+
+document.getElementById('joinGuestBtn').addEventListener('click', () => {
+  const meeting = parseSharedMeetingLink(guestLinkInput.value.trim());
+  if (!meeting) return showAuthToast('Please enter a valid shared meeting link or ID.');
+
+  // Only navigate within this app, even when the pasted link uses another host.
+  const target = new URL(window.location.href);
+  target.search = '';
+  target.hash = '';
+  target.searchParams.set('id', meeting.id);
+  target.searchParams.set('role', meeting.role);
+  window.location.assign(target.href);
+});
+guestLinkInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('joinGuestBtn').click();
+});
+
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
-  try { localStorage.removeItem('clarify_user'); } catch(e) {}
+  removeStorage('clarify_user');
   window.location.reload();
 });
 
@@ -442,13 +343,18 @@ const defaultState = () => ({
   });
 
 let inMemoryStorage = {};
+let storageAvailable = true;
 const getStorage = (k = STORAGE_KEY) => {
-  try { return localStorage.getItem(k); } 
-  catch(e) { return inMemoryStorage[k] || null; }
+  try { return localStorage.getItem(k); }
+  catch (e) { storageAvailable = false; return inMemoryStorage[k] || null; }
 };
 const setStorage = (val, k = STORAGE_KEY) => {
-  try { localStorage.setItem(k, val); } 
-  catch(e) { inMemoryStorage[k] = val; }
+  try { localStorage.setItem(k, val); }
+  catch (e) { storageAvailable = false; inMemoryStorage[k] = val; }
+};
+const removeStorage = k => {
+  try { localStorage.removeItem(k); } catch (e) { storageAvailable = false; }
+  delete inMemoryStorage[k];
 };
 let state = load();
 state.teams = state.teams || [];
@@ -626,11 +532,13 @@ let introDismissed = false;
 let introTimer = null;
 
 function dismissIntro() {
-  if (introDismissed) return;
+  clearTimeout(introTimer);
+  introTimer = null;
   introDismissed = true;
   homeEl.classList.remove('intro-active');
   introSplash?.classList.add('hidden');
 }
+document.getElementById('skipIntroBtn').addEventListener('click', dismissIntro);
 
 function meetingRowHTML(m) {
   const d = new Date(m.date + 'T00:00');
@@ -1139,7 +1047,9 @@ $('#shareToggle')?.addEventListener('change', (e) => {
   if (m.shareEnabled) {
     initP2P(m, true);
   } else {
-    if (peer) { peer.destroy(); peer = null; p2pConns = []; }
+    cancelPeerSetup();
+    stopHttpPolling();
+    if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
   }
 });
 function updateShareLinks(m) {
@@ -1168,41 +1078,57 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 
 /* ==================== HTTP SYNC FALLBACK (Messenger/Firewall Bypass) ==================== */
 let httpSyncInterval = null;
+let httpSyncVersion = 0;
+let guestSyncTimer = null;
 window.httpConnected = false;
 
+function stopHttpPolling() {
+  httpSyncVersion++;
+  clearInterval(httpSyncInterval);
+  httpSyncInterval = null;
+  window.httpConnected = false;
+}
 
 function startHttpPolling(m, isHost) {
-  if (httpSyncInterval) clearInterval(httpSyncInterval);
-  
+  stopHttpPolling();
+  const version = httpSyncVersion;
+
   const syncFn = async () => {
-    const localM = cm();
-    if (!localM || !localM.shareEnabled) return;
+    const localM = state.meetings.find(meeting => meeting.id === m.id);
+    if (isHost && (!localM || !localM.shareEnabled)) return;
     try {
-      const res = await fetch('/api/sync?id=' + localM.id);
+      // A guest has no local meeting yet, so poll by the shared ID rather than cm().
+      const res = await fetch('/api/sync?id=' + encodeURIComponent(m.id));
+      if (version !== httpSyncVersion) return;
       if (res.ok) {
-        window.httpConnected = true;
         const serverM = await res.json();
-        
-        // PULL: Server has a newer update (from another collaborator)
-        if (serverM && (serverM.lastUpdated || 0) > (localM.lastUpdated || 0)) {
+        if (version !== httpSyncVersion || !serverM || serverM.id !== m.id) return;
+        // The peer may have delivered a newer copy while the request was in flight.
+        const latestLocalM = state.meetings.find(meeting => meeting.id === m.id);
+        window.httpConnected = true;
+
+        const initialGuestLoad = !isHost && !!document.getElementById('syncLoader');
+        if (!latestLocalM || (serverM.lastUpdated || 0) > (latestLocalM.lastUpdated || 0) ||
+            (initialGuestLoad && (serverM.lastUpdated || 0) === (latestLocalM.lastUpdated || 0))) {
           const idx = state.meetings.findIndex(x => x.id === serverM.id);
-          if (idx > -1) state.meetings[idx] = serverM;
-          else state.meetings.push(serverM);
+          const meeting = normalizeMeeting(serverM);
+          if (idx > -1) state.meetings[idx] = meeting;
+          else state.meetings.push(meeting);
           state.lastUpdated = serverM.lastUpdated;
           originalSaveImmediate();
           refreshUI();
           renderAvatars();
-        } 
-        // PUSH: Local is newer (we typed something) and needs to push to server
-        else if (serverM && (localM.lastUpdated || 0) > (serverM.lastUpdated || 0)) {
-          fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(()=>{});
+        } else if ((latestLocalM.lastUpdated || 0) > (serverM.lastUpdated || 0)) {
+          if (!document.body.classList.contains('role-viewer')) {
+            fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: latestLocalM.id, meeting: latestLocalM }), headers: {'Content-Type': 'application/json'} }).catch(() => {});
+          }
+          if (initialGuestLoad) refreshUI();
         }
-      } else if (res.status === 404 && isHost) {
-        // Initial push if server empty
-        fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(()=>{});
+      } else if (res.status === 404 && isHost && localM) {
+        fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(() => {});
       }
     } catch (e) {
-      console.warn("HTTP Sync error:", e);
+      console.warn('HTTP Sync error:', e);
     }
   };
 
@@ -1210,11 +1136,29 @@ function startHttpPolling(m, isHost) {
   httpSyncInterval = setInterval(syncFn, 3000);
 }
 
+function showGuestWaiting() {
+  const loader = document.getElementById('syncLoader');
+  if (!loader) return;
+  loader.innerHTML = `<div style="max-width:400px;text-align:center;">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <h3 style="color:var(--text);margin:0 0 8px;">Waiting for host</h3>
+    <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">Couldn't connect. Make sure the host has the meeting open and check your connection.</p>
+    <button class="primary-btn" type="button">Go to home</button>
+  </div>`;
+  loader.querySelector('button').addEventListener('click', () => {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    window.location.assign(url.href);
+  });
+}
 
 // ==================== P2P INTERNET SYNC (PeerJS) ====================
 let peer = null;
 let p2pConns = [];
 let hostConn = null;
+let peerLoadTimer = null;
+let peerSetupVersion = 0;
 
 
 const PEER_CONFIG = {
@@ -1226,17 +1170,45 @@ const PEER_CONFIG = {
   }
 };
 
+function cancelPeerSetup() {
+  peerSetupVersion++;
+  clearTimeout(peerLoadTimer);
+  peerLoadTimer = null;
+}
+
 function initP2P(m, isHost) {
+  cancelPeerSetup();
   startHttpPolling(m, isHost);
-  if (typeof Peer === 'undefined') {
-    setTimeout(() => initP2P(m, isHost), 200);
+  const version = peerSetupVersion;
+  const deadline = Date.now() + 8000;
+
+  function waitForPeer() {
+    if (version !== peerSetupVersion) return;
+    if (typeof Peer === 'undefined') {
+      if (Date.now() < deadline) {
+        peerLoadTimer = setTimeout(waitForPeer, 200);
+      } else if (isHost) {
+        showAuthToast('Live sync could not be loaded. Check your connection and try sharing again.');
+      }
+      return;
+    }
+    peerLoadTimer = null;
+    try {
+      connectP2P(m, isHost);
+    } catch (e) {
+      console.warn('Could not start live sync:', e);
+      if (isHost) showAuthToast('Live sync could not be started. Check your connection and try again.');
+    }
+  }
+  waitForPeer();
+}
+
+function connectP2P(m, isHost) {
+  if (!window.RTCPeerConnection) {
+    showAuthToast('Your browser is blocking live sync. Please open this link in Chrome or Safari.');
     return;
   }
-  
-  if (!window.RTCPeerConnection) {
-    showAuthToast("Warning: Your browser or app (like Messenger) is blocking Live Sync. Please open this link in standard Safari or Chrome.");
-  }
-  
+
   if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
   
   if (isHost && m.shareEnabled) {
@@ -1296,28 +1268,16 @@ function initP2P(m, isHost) {
     peer.on('open', () => {
       hostConn = peer.connect('clarify-' + m.id, { reliable: true });
       
-      const syncTimeout = setTimeout(() => {
-        const loader = document.getElementById('syncLoader');
-        if (loader && !window.httpConnected) {
-          loader.innerHTML = `<div style="max-width:400px;text-align:center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            <h3 style="color:var(--text);margin:0 0 8px;">Waiting for Host</h3>
-            <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">The Host hasn't opened this meeting yet, or they are offline.</p>
-            <button class="primary-btn" onclick="window.location.search='';">Go to Home</button>
-          </div>`;
-        }
-      }, 8000);
-
       hostConn.on('open', () => {
         hostConn.send({ type: 'REQUEST_STATE', id: m.id });
         renderAvatars();
       });
       hostConn.on('data', (data) => {
-        if (data.type === 'STATE_PAYLOAD') {
-          clearTimeout(syncTimeout);
+        if (data.type === 'STATE_PAYLOAD' && data.meeting && data.meeting.id === m.id) {
           const idx = state.meetings.findIndex(x => x.id === data.meeting.id);
-          if (idx > -1) state.meetings[idx] = data.meeting;
-          else state.meetings.push(data.meeting);
+          const meeting = normalizeMeeting(data.meeting);
+          if (idx > -1) state.meetings[idx] = meeting;
+          else state.meetings.push(meeting);
           originalSaveImmediate();
           refreshUI();
         }
@@ -1326,14 +1286,12 @@ function initP2P(m, isHost) {
         }
       });
       hostConn.on('close', () => {
-        clearTimeout(syncTimeout);
         renderAvatars();
-        const loader = document.getElementById('syncLoader');
-        if (loader) loader.textContent = 'Host disconnected. Meeting is offline.';
+        showGuestWaiting();
       });
       hostConn.on('error', () => {
-        clearTimeout(syncTimeout);
         renderAvatars();
+        showGuestWaiting();
       });
     });
   }
@@ -1348,8 +1306,9 @@ function handleIncomingUpdate(incomingState) {
 }
 
 function broadcastUpdate() {
+  if (document.body.classList.contains('role-viewer')) return;
   const payload = { type: 'UPDATE', state: state };
-  if ((hostConn && hostConn.open) || window.httpConnected) {
+  if (hostConn && hostConn.open) {
     hostConn.send(payload);
   } else {
     p2pConns.forEach(c => { if(c.open) c.send(payload); });
@@ -1383,7 +1342,10 @@ function safeUpdateVal(elId, val) {
 }
 
 function refreshUI() {
+  clearTimeout(guestSyncTimer);
+  guestSyncTimer = null;
   const loader = document.getElementById('syncLoader');
+  const wasConnecting = !!loader;
   if (loader) loader.remove();
   
   appEl.style.display = '';
@@ -1398,7 +1360,8 @@ function refreshUI() {
     // Smart Render: Do not destroy the DOM if the collaborator is currently typing
     if (!isTyping) {
       renderMeetingHeader();
-      renderAgenda(); 
+      renderAgenda();
+      if (wasConnecting) renderFocus(false);
     } else {
       // Just silently update the header text if they aren't directly editing it
       if (activeId !== 'meetingTitleDisplay') {
@@ -1645,6 +1608,14 @@ meetingTitleDisplay.addEventListener('blur', () => {
 });
 
 $('#backHome').addEventListener('click', () => {
+  if (shareId && guestMeetingIds().includes(shareId)) {
+    // Leave the guest URL and role behind when returning to the local workspace.
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    window.location.assign(url.href);
+    return;
+  }
   saveImmediate();
   showHome();
 });
@@ -2468,7 +2439,7 @@ shortcutsModal.addEventListener('click', (e) => { if (e.target === shortcutsModa
 shortcutsModal.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeShortcuts));
 
 document.addEventListener('keydown', e => {
-  // Home screen: require clicking the intro CTA before proceeding
+  // Ignore home shortcuts until the intro has been dismissed.
   if (!homeEl.classList.contains('hidden')) {
     if (!introDismissed) {
       
@@ -2885,82 +2856,6 @@ function download(content, filename, type='text/plain') {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function slug(s) { return (s||'untitled').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40); }
-
-/* ================================ BOOT =================================== */
-applyTheme();
-introTimer = setTimeout(() => dismissIntro(), 3000);
-
-const urlParams = new URLSearchParams(window.location.search);
-const shareId = urlParams.get('id');
-const userRole = urlParams.get('role');
-let currentUser = null;
-try { currentUser = localStorage.getItem('clarify_user'); } catch(e) {}
-
-if (shareId) {
-  // Check if we own this meeting locally
-  const sm = state.meetings.find(x => x.id === shareId);
-  
-  if (sm) {
-    // IT IS OUR MEETING
-    state.currentId = shareId;
-    introDismissed = true;
-    homeEl.classList.remove('intro-active');
-    introSplash?.classList.add('hidden');
-    
-    
-  let storageWorks = true;
-  try { localStorage.setItem('test', '1'); localStorage.removeItem('test'); } catch(e) { storageWorks = false; }
-  
-  if (!storageWorks && !shareId) {
-    showAuthToast("Warning: You are using an in-app browser or strict privacy mode that blocks Local Storage. Your meetings will NOT be saved. Please open this app in Chrome or Safari.");
-  }
-
-  if (!currentUser) {
-      // We own it, but we are logged out. Force login.
-      document.getElementById('authScreen').classList.add('show');
-      homeEl.classList.add('hidden');
-      appEl.style.display = 'none';
-    } else {
-      showApp(); // Load as HOST with full permissions
-    }
-    
-  } else {
-    // IT IS NOT OUR MEETING. WE ARE A GUEST.
-    state.currentId = shareId;
-    introDismissed = true;
-    homeEl.classList.remove('intro-active');
-    introSplash?.classList.add('hidden');
-    
-    if (userRole === 'viewer' || userRole === 'editor') {
-      document.body.classList.toggle('role-viewer', userRole === 'viewer');
-      initP2P({ id: shareId }, false);
-    }
-    
-    appEl.style.display = '';
-    homeEl.classList.add('hidden');
-    const loader = document.createElement('div');
-    loader.id = 'syncLoader';
-    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text);';
-    loader.innerHTML = `<div style="max-width:300px;text-align:center;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite; color:var(--accent); margin-bottom:16px;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Connecting to Host...</div>
-        <div style="font-size:13px; color:var(--muted);">Syncing meeting data securely.</div>
-      </div>`;
-    document.body.appendChild(loader);
-  }
-} else {
-  // STANDARD BOOT
-  if (!currentUser) {
-    document.getElementById('authScreen').classList.add('show');
-    homeEl.classList.add('hidden');
-    appEl.style.display = 'none';
-  } else {
-    state.currentId = null;
-    saveImmediate();
-    renderHome();
-  }
-}
-
 
 /* ==================== WEB AUDIO DICTATION (Speech-to-Text) ==================== */
 let recognition = null;
@@ -3390,3 +3285,71 @@ document.getElementById('topbarMicBtn')?.addEventListener('click', () => toggleM
 /* Disable mic in viewer mode */
 
 /* ========================================================================= */
+
+/* ================================ BOOT =================================== */
+applyTheme();
+
+const urlParams = new URLSearchParams(window.location.search);
+const shareId = urlParams.get('id');
+const userRole = urlParams.get('role') === 'editor' ? 'editor' : 'viewer';
+let currentUser = getStorage('clarify_user');
+
+// A cached guest meeting is not an owned local meeting on the next visit.
+const GUEST_MEETINGS_KEY = 'clarify_guest_meetings';
+function guestMeetingIds() {
+  try {
+    const ids = JSON.parse(getStorage(GUEST_MEETINGS_KEY) || '[]');
+    return Array.isArray(ids) ? ids : [];
+  } catch { return []; }
+}
+function rememberGuestMeeting(id) {
+  const ids = guestMeetingIds();
+  if (!ids.includes(id)) setStorage(JSON.stringify([...ids, id]), GUEST_MEETINGS_KEY);
+}
+
+if (shareId) {
+  const guestIds = guestMeetingIds();
+  const ownedMeeting = state.meetings.find(m => m.id === shareId && !guestIds.includes(m.id));
+  dismissIntro();
+  state.currentId = shareId;
+
+  if (ownedMeeting) {
+    if (!currentUser) {
+      authScreen.classList.add('show');
+      homeEl.classList.add('hidden');
+      appEl.style.display = 'none';
+    } else {
+      showApp();
+    }
+  } else {
+    rememberGuestMeeting(shareId);
+    document.body.classList.toggle('role-viewer', userRole === 'viewer');
+    homeEl.classList.add('hidden');
+    appEl.style.display = '';
+    const loader = document.createElement('div');
+    loader.id = 'syncLoader';
+    loader.setAttribute('role', 'status');
+    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text);';
+    loader.innerHTML = `<div style="max-width:300px;text-align:center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite; color:var(--accent); margin-bottom:16px;" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Connecting to host...</div>
+      <div style="font-size:13px; color:var(--muted);">Syncing meeting data.</div>
+    </div>`;
+    document.body.appendChild(loader);
+    // This timeout starts independently of PeerJS, so blocked CDNs or offline hosts cannot leave an endless loader.
+    guestSyncTimer = setTimeout(showGuestWaiting, 8000);
+    initP2P({ id: shareId }, false);
+  }
+} else if (!currentUser) {
+  dismissIntro();
+  authScreen.classList.add('show');
+  homeEl.classList.add('hidden');
+  appEl.style.display = 'none';
+} else {
+  state.currentId = null;
+  saveImmediate();
+  renderHome();
+  introTimer = setTimeout(dismissIntro, 3000);
+}
+
+window.clarifyStartup?.ready();

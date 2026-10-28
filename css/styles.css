@@ -1280,6 +1280,22 @@
     animation: fadeIn 0.8s 0.4s forwards cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  .intro-enter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--t), box-shadow var(--t);
+  }
+  .intro-enter:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
   /* Notes pane collapses away unless explicitly in Notes mode or a task is selected */
   #workPanel .panel-split {
     transition: grid-template-columns 320ms cubic-bezier(.2,.7,.2,1);
@@ -1994,6 +2010,13 @@ body.role-viewer .notes-pane-eyebrow {
   animation: fadeIn 300ms ease;
 }
 .auth-screen.show { display: flex; }
+.startup-error {
+  position: fixed; inset: 0; z-index: 100002;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--bg);
+}
+.startup-error[hidden] { display: none; }
+
 .auth-card {
   background: var(--surface-glass); backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);

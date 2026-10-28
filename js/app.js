@@ -282,19 +282,23 @@ searchInput?.addEventListener('input', (e) => {
   if (matches.length > 0) {
     searchEmpty.classList.remove('show');
     searchResults.classList.add('has-results');
-    searchResults.innerHTML = matches.map((m, i) => `
-      <div class="search-result-item" data-id="${escapeAttr(m.meeting.id)}">
-        <div class="search-result-title">${escapeHTML(m.meeting.title || 'Untitled Meeting')}</div>
-        <div class="search-result-context">Matched in ${m.type}: ${escapeHTML(m.context)}</div>
-      </div>
-    `).join('');
-    
-    // Bind clicks
-    searchResults.querySelectorAll('.search-result-item').forEach(item => {
+    searchResults.replaceChildren();
+    matches.forEach(match => {
+      const item = document.createElement('div');
+      item.className = 'search-result-item';
+      item.dataset.id = match.meeting.id;
+      const title = document.createElement('div');
+      title.className = 'search-result-title';
+      title.textContent = match.meeting.title || 'Untitled Meeting';
+      const context = document.createElement('div');
+      context.className = 'search-result-context';
+      context.textContent = `Matched in ${match.type}: ${match.context}`;
+      item.append(title, context);
       item.addEventListener('click', () => {
         closeSearch();
         openMeeting(item.dataset.id);
       });
+      searchResults.appendChild(item);
     });
   } else {
     searchResults.innerHTML = '';
@@ -869,15 +873,30 @@ function renderTeams() {
       </div>`;
     return;
   }
-  list.innerHTML = state.teams.map(t => `
-    <div class="team-card" data-id="${escapeAttr(t.id)}">
-      <div class="team-name">${escapeHTML(t.name)}</div>
-      ${t.description ? `<div class="team-desc">${escapeHTML(t.description)}</div>` : ''}
-      <div class="team-meta">
-        <span>👥 ${t.members.length} member${t.members.length===1?'':'s'}</span>
-      </div>
-    </div>
-  `).join('');
+  list.replaceChildren();
+  state.teams.forEach(team => {
+    const card = document.createElement('div');
+    card.className = 'team-card';
+    card.dataset.id = team.id;
+    const name = document.createElement('div');
+    name.className = 'team-name';
+    name.textContent = team.name || '';
+    card.appendChild(name);
+    if (team.description) {
+      const description = document.createElement('div');
+      description.className = 'team-desc';
+      description.textContent = team.description;
+      card.appendChild(description);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'team-meta';
+    const count = document.createElement('span');
+    const memberCount = Array.isArray(team.members) ? team.members.length : 0;
+    count.textContent = `👥 ${memberCount} member${memberCount === 1 ? '' : 's'}`;
+    meta.appendChild(count);
+    card.appendChild(meta);
+    list.appendChild(card);
+  });
 }
 
 $$('#homeTabs .tab').forEach(tab => {
@@ -1024,9 +1043,9 @@ function populateVisibilityDropdown() {
   sels.forEach(sel => {
     if (!sel) return;
     const currentVal = sel.value;
-    sel.innerHTML = '<option value="private">Private (Only me)</option>';
+    sel.replaceChildren(new Option('Private (Only me)', 'private'));
     (state.teams || []).forEach(t => {
-      sel.innerHTML += `<option value="${escapeAttr(t.id)}">Share with: ${escapeHTML(t.name)}</option>`;
+      sel.add(new Option(`Share with: ${t.name}`, t.id));
     });
     // Try to restore previous value if it exists in the new options
     if (Array.from(sel.options).some(o => o.value === currentVal)) {
@@ -1679,9 +1698,9 @@ function renderAgenda() {
       <span class="agenda-handle" title="Drag to reorder" aria-hidden="true">
         <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="8" cy="2" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="8" cy="12" r="1.2"/></svg>
       </span>
-      <span class="agenda-index">${idx + 1}</span>
-      <span class="agenda-title" data-id="${escapeAttr(item.id)}">${escapeHTML(item.title || 'Untitled')}</span>
-      <span class="agenda-meta">${item.limitMin ? escapeHTML(item.limitMin)+'m' : ''}</span>
+      <span class="agenda-index"></span>
+      <span class="agenda-title"></span>
+      <span class="agenda-meta"></span>
       <span class="agenda-actions">
         <button class="mini-btn" data-act="edit" title="Rename" aria-label="Rename topic">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
@@ -1691,6 +1710,11 @@ function renderAgenda() {
         </button>
       </span>
     `;
+    row.querySelector('.agenda-index').textContent = idx + 1;
+    const title = row.querySelector('.agenda-title');
+    title.dataset.id = item.id;
+    title.textContent = item.title || 'Untitled';
+    row.querySelector('.agenda-meta').textContent = item.limitMin ? `${item.limitMin}m` : '';
     agendaListEl.appendChild(row);
   });
   meetingMeta.textContent = m.items.length;
@@ -2016,41 +2040,62 @@ function taskCard(t, showTopic=false) {
   const m = cm();
   const el = document.createElement('div');
   const expanded = !!m.expandedTasks[t.id];
-  el.className = `action-card status-${t.status}` + (expanded ? ' expanded' : '');
+  el.className = `action-card status-${STATUSES.includes(t.status) ? t.status : 'ongoing'}` + (expanded ? ' expanded' : '');
   el.dataset.id = t.id;
   const item = m.items.find(i => i.id === t.itemId);
   const linkCount = (t.links || []).length;
   const hasNotes = !!(t.notes && t.notes.trim());
 
-  const meta = [
-    t.owner ? `<span class="meta-chip">👤 ${escapeHTML(t.owner)}</span>` : '',
-    t.due ? `<span class="meta-chip">📅 ${formatDateShort(t.due)}</span>` : '',
-    (showTopic && item) ? `<span class="agenda-tag">› ${escapeHTML(item.title || 'Untitled')}</span>` : '',
-    hasNotes ? `<span class="note-dot" title="Has notes"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>` : '',
-    linkCount ? `<span class="link-count" title="${linkCount} link${linkCount===1?'':'s'}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>${linkCount}</span>` : '',
-  ].filter(Boolean).join('');
-
-  const checkSvg = t.status === 'done'
-    ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
-    : t.status === 'abandoned'
-    ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
-    : '';
-
+  // The template is static; all meeting data is inserted as text or properties.
   el.innerHTML = `
     <div class="action-row" data-act="toggle-expand">
-      <button class="action-check" data-act="cycle" title="Cycle status">${checkSvg}</button>
-      <div class="action-body">
-        <div class="action-name">${escapeHTML(t.name)}</div>
-        ${meta ? `<div class="action-meta">${meta}</div>` : ''}
-      </div>
-      <span class="status-pill ${escapeAttr(t.status)}">${escapeHTML(t.status)}</span>
+      <button class="action-check" data-act="cycle" title="Cycle status"></button>
+      <div class="action-body"><div class="action-name"></div></div>
+      <span class="status-pill"></span>
       <button class="delete-btn" data-act="del" title="Delete task">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
       <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-    ${expanded ? renderExpand(t) : ''}
-  `;
+    </div>`;
+  const safeStatus = STATUSES.includes(t.status) ? t.status : 'ongoing';
+  const check = el.querySelector('.action-check');
+  if (safeStatus === 'done') {
+    check.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  } else if (safeStatus === 'abandoned') {
+    check.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  }
+  el.querySelector('.action-name').textContent = t.name || '';
+  const pill = el.querySelector('.status-pill');
+  pill.classList.add(safeStatus);
+  pill.textContent = safeStatus;
+  const meta = document.createElement('div');
+  meta.className = 'action-meta';
+  const addTextMeta = (className, text) => {
+    const span = document.createElement('span');
+    span.className = className;
+    span.textContent = text;
+    meta.appendChild(span);
+  };
+  if (t.owner) addTextMeta('meta-chip', `👤 ${t.owner}`);
+  if (t.due) addTextMeta('meta-chip', `📅 ${formatDateShort(t.due)}`);
+  if (showTopic && item) addTextMeta('agenda-tag', `› ${item.title || 'Untitled'}`);
+  if (hasNotes) {
+    const note = document.createElement('span');
+    note.className = 'note-dot';
+    note.title = 'Has notes';
+    note.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    meta.appendChild(note);
+  }
+  if (linkCount) {
+    const count = document.createElement('span');
+    count.className = 'link-count';
+    count.title = `${linkCount} link${linkCount === 1 ? '' : 's'}`;
+    count.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+    count.appendChild(document.createTextNode(String(linkCount)));
+    meta.appendChild(count);
+  }
+  if (meta.childNodes.length) el.querySelector('.action-body').appendChild(meta);
+  if (expanded) el.appendChild(renderExpand(t));
 
   el.querySelector('[data-act="toggle-expand"]').addEventListener('click', (e) => {
     if (e.target.closest('[data-act="cycle"]') || e.target.closest('[data-act="del"]')) return;
@@ -2088,76 +2133,98 @@ function taskCard(t, showTopic=false) {
 
 function renderExpand(t) {
   const links = t.links || [];
-  return `
-    <div class="action-expand">
-      <div>
-        <div class="field-label">
-          <span>Status</span>
-          <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">
-            Notes for this task slide in on the left ←
-          </span>
-        </div>
-        <select class="status-select" data-task="${escapeAttr(t.id)}" data-field="status">
-          <option value="ongoing"   ${t.status==='ongoing'?'selected':''}>Ongoing</option>
-          <option value="done"      ${t.status==='done'?'selected':''}>Done</option>
-          <option value="abandoned" ${t.status==='abandoned'?'selected':''}>Abandoned</option>
-        </select>
+  const expand = document.createElement('div');
+  expand.className = 'action-expand';
+  expand.innerHTML = `
+    <div>
+      <div class="field-label">
+        <span>Status</span>
+        <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">Notes for this task slide in on the left ←</span>
       </div>
-      <div>
-        <div class="field-label">
-          <span>Links &amp; Attachments</span>
-          <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">${links.length} item${links.length===1?'':'s'}</span>
-        </div>
-        <div class="links-list" id="links-${escapeAttr(t.id)}">
-          ${links.length ? links.map(l => linkRowHTML(t.id, l)).join('') : '<div class="empty-list" style="padding:8px;">No links yet.</div>'}
-        </div>
-        <div class="link-form" data-task="${escapeAttr(t.id)}">
-          <input data-link-field="label" placeholder="Label (optional)" />
-          <input data-link-field="url" placeholder="URL or /path/to/folder" />
-          <button data-link-add>+ Add</button>
-        </div>
-        <div class="link-hint">
-          Tip: paste a URL (https://…), a local file path (e.g. <code>/Users/me/Docs</code> or <code>C:\\Projects</code>),
-          or a UNC share. Local <code>file://</code> links may need to be opened from your file manager.
-        </div>
-      </div>
+      <select class="status-select" data-field="status">
+        <option value="ongoing">Ongoing</option>
+        <option value="done">Done</option>
+        <option value="abandoned">Abandoned</option>
+      </select>
     </div>
-  `;
+    <div>
+      <div class="field-label">
+        <span>Links &amp; Attachments</span>
+        <span class="links-count" style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;"></span>
+      </div>
+      <div class="links-list"></div>
+      <div class="link-form">
+        <input data-link-field="label" placeholder="Label (optional)" />
+        <input data-link-field="url" placeholder="URL or /path/to/folder" />
+        <button data-link-add>+ Add</button>
+      </div>
+      <div class="link-hint">Tip: paste a URL (https://…), a local file path (e.g. <code>/Users/me/Docs</code> or <code>C:\\Projects</code>),
+        or a UNC share. Local <code>file://</code> links may need to be opened from your file manager.</div>
+    </div>`;
+  const select = expand.querySelector('.status-select');
+  select.dataset.task = t.id;
+  select.value = STATUSES.includes(t.status) ? t.status : 'ongoing';
+  expand.querySelector('.links-count').textContent = `${links.length} item${links.length === 1 ? '' : 's'}`;
+  const list = expand.querySelector('.links-list');
+  list.id = 'links-' + t.id;
+  if (links.length) links.forEach(link => list.appendChild(linkRow(t.id, link)));
+  else {
+    const empty = document.createElement('div');
+    empty.className = 'empty-list';
+    empty.style.padding = '8px';
+    empty.textContent = 'No links yet.';
+    list.appendChild(empty);
+  }
+  expand.querySelector('.link-form').dataset.task = t.id;
+  return expand;
 }
-function linkRowHTML(taskId, l) {
+
+function linkRow(taskId, l) {
   const href = normalizeHref(l.url);
   const local = isLocalLink(href);
   const display = l.label && l.label.trim() ? l.label : (local ? linkDisplay(href) : (linkHostname(href) || href));
   const sub = local ? linkDisplay(href) : href;
-  return `
-    <div class="link-row" data-link-id="${escapeAttr(l.id)}" data-task="${escapeAttr(taskId)}">
-      <span class="link-icon" title="${local ? 'Local folder/file' : 'Web link'}">
-        ${local
-          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
-          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'}
-      </span>
-      <a class="link-text" href="${escapeAttr(href)}" target="_blank" rel="noopener" title="${escapeAttr(href)}">
-        <div class="link-label">${escapeHTML(display)}</div>
-        ${l.label && sub && sub !== display ? `<div class="link-url">${escapeHTML(sub)}</div>` : ''}
-      </a>
-      <div class="link-actions">
-        <button class="mini-btn" data-link-act="copy" title="Copy path">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button class="mini-btn" data-link-act="del" title="Remove link">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-    </div>
-  `;
+  const row = document.createElement('div');
+  row.className = 'link-row';
+  row.dataset.linkId = l.id;
+  row.dataset.task = taskId;
+  row.innerHTML = `
+    <span class="link-icon"></span>
+    <a class="link-text" target="_blank" rel="noopener"><div class="link-label"></div></a>
+    <div class="link-actions">
+      <button class="mini-btn" data-link-act="copy" title="Copy path">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button class="mini-btn" data-link-act="del" title="Remove link">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>`;
+  const icon = row.querySelector('.link-icon');
+  if (local) {
+    icon.title = 'Local folder/file';
+    icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+  } else {
+    icon.title = 'Web link';
+    icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  }
+  const anchor = row.querySelector('.link-text');
+  anchor.setAttribute('href', href);
+  anchor.title = href;
+  anchor.querySelector('.link-label').textContent = display;
+  if (l.label && sub && sub !== display) {
+    const url = document.createElement('div');
+    url.className = 'link-url';
+    url.textContent = sub;
+    anchor.appendChild(url);
+  }
+  return row;
 }
-
 function wireExpand(cardEl, t) {
   const m = cm();
-  const sel = cardEl.querySelector(`select[data-task="${CSS.escape(String(t.id))}"]`);
+  const sel = cardEl.querySelector('.status-select');
   sel?.addEventListener('change', () => { t.status = sel.value; save(); renderActions(); });
 
-  const form = cardEl.querySelector(`.link-form[data-task="${CSS.escape(String(t.id))}"]`);
+  const form = cardEl.querySelector('.link-form');
   const labelInp = form?.querySelector('[data-link-field="label"]');
   const urlInp   = form?.querySelector('[data-link-field="url"]');
   const addBtn   = form?.querySelector('[data-link-add]');

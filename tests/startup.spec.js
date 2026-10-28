@@ -183,3 +183,43 @@ test.describe('when JavaScript is disabled', () => {
     await expect(notice).toContainText('JavaScript is required');
   });
 });
+
+test('team, task, and attachment controls work with safely rendered text', async ({ page }) => {
+  const errors = trackErrors(page);
+  const teamName = '<img src=x onerror=window.injected=1>';
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Open local workspace' }).click();
+  await page.locator('[data-tab="teams"]').click();
+  await page.locator('#openNewTeamBtn').click();
+  await page.locator('#teamNameInput').fill(teamName);
+  await page.locator('#teamDescInput').fill('A safe description');
+  await page.locator('#saveTeamBtn').click();
+  await expect(page.locator('.team-name')).toHaveText(teamName);
+  await expect(page.locator('#teamList img')).toHaveCount(0);
+
+  await page.locator('[data-tab="meetings"]').click();
+  await page.locator('#openNewMeeting').click();
+  await expect(page.locator('#meetingVisibility option')).toHaveCount(2);
+  await expect(page.locator('#meetingVisibility option').nth(1)).toHaveText(`Share with: ${teamName}`);
+  await page.locator('#meetingTitleInput').fill('Tasks and links');
+  await page.locator('#createMeetingBtn').click();
+  await page.locator('#newItemInput').fill('Agenda');
+  await page.locator('#newItemInput').press('Enter');
+  await page.locator('#taskName').fill('Publish summary');
+  await page.locator('#taskOwner').fill('Sam');
+  await page.locator('#addTaskBtn').click();
+  await expect(page.locator('.action-name')).toHaveText('Publish summary');
+  await expect(page.locator('.meta-chip')).toContainText('Sam');
+  await page.locator('.action-body').click();
+  await page.locator('[data-link-field="label"]').fill('Project');
+  await page.locator('[data-link-field="url"]').fill('https://example.com/doc');
+  await page.locator('[data-link-add]').click();
+  await expect(page.locator('.link-text')).toHaveAttribute('href', 'https://example.com/doc');
+  await expect(page.locator('.link-label')).toHaveText('Project');
+  await page.locator('.status-select').selectOption('done');
+  await expect(page.locator('.status-pill')).toHaveText('done');
+  await page.locator('[data-link-act="del"]').click();
+  await expect(page.locator('.links-list')).toContainText('No links yet.');
+  expect(await page.evaluate(() => window.injected)).toBeUndefined();
+  expect(errors).toEqual([]);
+});

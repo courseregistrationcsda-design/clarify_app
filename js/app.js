@@ -1,192 +1,93 @@
 
-/* ==================== AUTHENTICATION & PASSWORD RESET ==================== */
+/* ==================== LOCAL / GUEST ACCESS ==================== */
 const authScreen = document.getElementById('authScreen');
 const authLoginView = document.getElementById('authLoginView');
-const authForgotView = document.getElementById('authForgotView');
-
-const forgotStep1 = document.getElementById('forgotStep1');
-const forgotStep2 = document.getElementById('forgotStep2');
-const forgotSubtitle = document.getElementById('forgotSubtitle');
-
-// Navigation
-document.getElementById('navToForgotBtn')?.addEventListener('click', () => {
-  authLoginView.style.display = 'none';
-  authForgotView.style.display = 'block';
-  forgotStep1.style.display = 'block';
-  forgotStep2.style.display = 'none';
-  forgotSubtitle.textContent = 'Enter your email to receive a 6-digit reset code.';
-});
-
-document.getElementById('navToLoginBtn')?.addEventListener('click', () => {
-  authForgotView.style.display = 'none';
-  authLoginView.style.display = 'block';
-});
-
-
 const authGuestView = document.getElementById('authGuestView');
+const guestLinkInput = document.getElementById('guestLinkInput');
 
-document.getElementById('navToGuestBtn')?.addEventListener('click', () => {
-  authLoginView.style.display = 'none';
-  authGuestView.style.display = 'block';
-});
-
-document.getElementById('navToLoginFromGuestBtn')?.addEventListener('click', () => {
-  authGuestView.style.display = 'none';
-  authLoginView.style.display = 'block';
-});
-
-document.getElementById('joinGuestBtn')?.addEventListener('click', (e) => {
-  const link = document.getElementById('guestLinkInput').value.trim();
-  if (!link) return showAuthToast('Please enter a valid shared meeting link or ID.');
-  
-  const btn = e.target;
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Connecting...';
-  btn.disabled = true;
-  
-  setTimeout(() => {
-      try { localStorage.setItem('clarify_user', email); } catch(e) {}
-      authScreen.classList.remove('show');
-      
-      // Fix Blank Screen Bug: Ensure Home layout is visible before rendering
-      const homeScreen = document.getElementById('homeScreen');
-      if (homeScreen) homeScreen.classList.remove('hidden');
-      const appWrap = document.getElementById('app');
-      if (appWrap) appWrap.style.display = 'none';
-      
-      btn.innerHTML = 'Sign In';
-      btn.disabled = false;
-      
-      queueMicrotask(() => {
-        saveImmediate();
-      renderHome();
-      
-      // If it's a completely new user, show the splash screen
-      if (!state.meetings.length) {
-        introDismissed = false; // Reset the flag so it doesn't freeze!
-        document.getElementById('homeScreen').classList.add('intro-active');
-        document.getElementById('introSplash').classList.remove('hidden');
-        introTimer = setTimeout(() => dismissIntro(), 3000);
-      }
-    });
-  }, 1200);
-  });
-});
-
-
-
-
-function showAuthToast(msg, duration=5000) {
+let authToastTimer = null;
+function showAuthToast(msg, duration = 5000) {
   const toast = document.getElementById('authToast');
   const text = document.getElementById('authToastText');
-  if(toast && text) {
-    text.innerHTML = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), duration);
-  } else {
-    showAuthToast(msg.replace(/<[^>]*>?/gm, ''));
-  }
-}
-
-async function handleSendCode(btnElement) {
-  const email = document.getElementById('forgotEmail').value.trim();
-  if (!email) return showAuthToast('Please enter your email address.');
-  
-  btnElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Sending...';
-  btnElement.disabled = true;
-  
-  try {
-    const res = await fetch('/api/send-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      currentResetCode = data.code; 
-      
-      forgotStep1.style.display = 'none';
-      forgotStep2.style.display = 'block';
-      forgotSubtitle.innerHTML = `We sent a secure code to <strong>${email}</strong>.<br>Please enter it below.`;
-      
-      showAuthToast('Reset code sent to your email!');
-    } else {
-      const err = await res.json();
-      showAuthToast(err.error || "Failed to send reset code.");
-    }
-  } catch (e) {
-    showAuthToast("Network error. Could not reach the server.");
-  }
-  
-  btnElement.innerHTML = btnElement.id === 'sendCodeBtn' ? 'Send Reset Code' : 'Resend Code';
-  btnElement.disabled = false;
-}
-
-
-document.getElementById('navToSignupBtn')?.addEventListener('click', () => {
-  showAuthToast("Account creation is currently invite-only in this beta. Please join as a Guest.");
-});
-
-// Forgot Password - Step 1: Send Code
-document.getElementById('sendCodeBtn')?.addEventListener('click', (e) => handleSendCode(e.target));
-document.getElementById('resendCodeBtn')?.addEventListener('click', (e) => handleSendCode(e.target));
-
-// Forgot Password - Step 2: Reset & Login
-document.getElementById('resetPassBtn')?.addEventListener('click', (e) => {
-  const code = document.getElementById('resetCode').value.trim();
-  const newPass = document.getElementById('newPass').value.trim();
-  
-  if (newPass.length < 8) {
-    showAuthToast('Password must be at least 8 characters.');
+  if (!toast || !text) {
+    console.warn(msg);
     return;
   }
-  
-  const btn = e.target;
-  
-  requestAnimationFrame(() => {
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Resetting...';
-    btn.disabled = true;
-    
-    const email = document.getElementById('forgotEmail').value.trim();
-    
-    fetch('/api/verify-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, newPass })
-    }).then(res => res.json()).then(data => {
-      if (data.error) {
-        showAuthToast(data.error);
-        btn.innerHTML = 'Reset Password & Login';
-        btn.disabled = false;
-        return;
-      }
+  text.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(authToastTimer);
+  authToastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+}
 
-    
-    // Simulate password update in database
-    setTimeout(() => {
-      const email = document.getElementById('forgotEmail').value.trim();
-      try { localStorage.setItem('clarify_user', email); } catch(e) {} // Auto-login after reset
-      authScreen.classList.remove('show');
-      
-      btn.innerHTML = 'Reset Password & Login';
-      btn.disabled = false;
-      
-      queueMicrotask(() => {
-        saveImmediate();
-        renderHome();
-      });
-    }).catch(err => {
-      showAuthToast("Network error during reset.");
-      btn.innerHTML = 'Reset Password & Login';
-      btn.disabled = false;
-    });
-  });
+document.getElementById('continueLocalBtn').addEventListener('click', () => {
+  // This app stores meetings locally; it does not have an account backend.
+  setStorage('local', 'clarify_user');
+  currentUser = 'local';
+  authScreen.classList.remove('show');
+  dismissIntro();
+
+  // If the user opened a link to a meeting already on this device, resume it.
+  if (shareId && state.meetings.some(m => m.id === shareId)) {
+    state.currentId = shareId;
+    showApp();
+  } else {
+    state.currentId = null;
+    appEl.style.display = 'none';
+    homeEl.classList.remove('hidden');
+    saveImmediate();
+    renderHome();
+  }
+
+  if (!storageAvailable) {
+    showAuthToast('Browser storage is unavailable. Your meetings will only last until this page is closed.');
+  }
 });
 
-// Logout
-// Logout
+document.getElementById('navToGuestBtn').addEventListener('click', () => {
+  authLoginView.style.display = 'none';
+  authGuestView.style.display = 'block';
+  guestLinkInput.focus();
+});
+
+document.getElementById('navToLoginFromGuestBtn').addEventListener('click', () => {
+  authGuestView.style.display = 'none';
+  authLoginView.style.display = 'block';
+  document.getElementById('navToGuestBtn').focus();
+});
+
+function parseSharedMeetingLink(value) {
+  const validId = /^[a-zA-Z0-9_-]{1,128}$/;
+  if (!value) return null;
+  if (validId.test(value)) return { id: value, role: 'viewer' };
+  try {
+    const url = new URL(value, window.location.href);
+    const id = url.searchParams.get('id');
+    const role = url.searchParams.get('role') || 'viewer';
+    if (!['http:', 'https:'].includes(url.protocol) || !id || !validId.test(id) || !['viewer', 'editor'].includes(role)) return null;
+    return { id, role };
+  } catch {
+    return null;
+  }
+}
+
+document.getElementById('joinGuestBtn').addEventListener('click', () => {
+  const meeting = parseSharedMeetingLink(guestLinkInput.value.trim());
+  if (!meeting) return showAuthToast('Please enter a valid shared meeting link or ID.');
+
+  // Only navigate within this app, even when the pasted link uses another host.
+  const target = new URL(window.location.href);
+  target.search = '';
+  target.hash = '';
+  target.searchParams.set('id', meeting.id);
+  target.searchParams.set('role', meeting.role);
+  window.location.assign(target.href);
+});
+guestLinkInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('joinGuestBtn').click();
+});
+
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
-  try { localStorage.removeItem('clarify_user'); } catch(e) {}
+  removeStorage('clarify_user');
   window.location.reload();
 });
 
@@ -358,7 +259,7 @@ searchInput?.addEventListener('input', (e) => {
   
   let matches = [];
   
-  (state.meetings || []).forEach(m => {
+  ownedMeetings().forEach(m => {
     // Check Title
     if ((m.title || '').toLowerCase().includes(q)) {
       matches.push({ meeting: m, type: 'Meeting', context: m.title || 'Untitled' });
@@ -381,19 +282,23 @@ searchInput?.addEventListener('input', (e) => {
   if (matches.length > 0) {
     searchEmpty.classList.remove('show');
     searchResults.classList.add('has-results');
-    searchResults.innerHTML = matches.map((m, i) => `
-      <div class="search-result-item" data-id="${m.meeting.id}">
-        <div class="search-result-title">${escapeHTML(m.meeting.title || 'Untitled Meeting')}</div>
-        <div class="search-result-context">Matched in ${m.type}: ${escapeHTML(m.context)}</div>
-      </div>
-    `).join('');
-    
-    // Bind clicks
-    searchResults.querySelectorAll('.search-result-item').forEach(item => {
+    searchResults.replaceChildren();
+    matches.forEach(match => {
+      const item = document.createElement('div');
+      item.className = 'search-result-item';
+      item.dataset.id = match.meeting.id;
+      const title = document.createElement('div');
+      title.className = 'search-result-title';
+      title.textContent = match.meeting.title || 'Untitled Meeting';
+      const context = document.createElement('div');
+      context.className = 'search-result-context';
+      context.textContent = `Matched in ${match.type}: ${match.context}`;
+      item.append(title, context);
       item.addEventListener('click', () => {
         closeSearch();
         openMeeting(item.dataset.id);
       });
+      searchResults.appendChild(item);
     });
   } else {
     searchResults.innerHTML = '';
@@ -442,13 +347,18 @@ const defaultState = () => ({
   });
 
 let inMemoryStorage = {};
+let storageAvailable = true;
 const getStorage = (k = STORAGE_KEY) => {
-  try { return localStorage.getItem(k); } 
-  catch(e) { return inMemoryStorage[k] || null; }
+  try { return localStorage.getItem(k); }
+  catch (e) { storageAvailable = false; return inMemoryStorage[k] || null; }
 };
 const setStorage = (val, k = STORAGE_KEY) => {
-  try { localStorage.setItem(k, val); } 
-  catch(e) { inMemoryStorage[k] = val; }
+  try { localStorage.setItem(k, val); }
+  catch (e) { storageAvailable = false; inMemoryStorage[k] = val; }
+};
+const removeStorage = k => {
+  try { localStorage.removeItem(k); } catch (e) { storageAvailable = false; }
+  delete inMemoryStorage[k];
 };
 let state = load();
 state.teams = state.teams || [];
@@ -479,7 +389,7 @@ function load() {
       m.expandedTasks = v.expandedTasks || {};
       m.statusFilter = v.statusFilter || 'all';
       m.status = computeAutoStatus(m);
-      s.meetings.push(m);
+      s.meetings.push(normalizeMeeting(m));
       return s;
     }
     return defaultState();
@@ -489,12 +399,15 @@ function normalizeMeeting(m) {
   return {
     ...newMeeting(),
     ...m,
-    items: m.items || [],
-    tasks: (m.tasks || []).map(t => ({
-      status: t.status || (t.done ? 'done' : 'ongoing'),
-      notes: t.notes || '', links: t.links || [],
+    items: (Array.isArray(m.items) ? m.items : []).filter(item => item && typeof item === 'object').map(item => ({
+      ...item,
+      limitMin: Number.isFinite(Number(item.limitMin)) ? Number(item.limitMin) : 0,
+    })),
+    tasks: (Array.isArray(m.tasks) ? m.tasks : []).filter(t => t && typeof t === 'object').map(t => ({
       ...t,
-      status: t.status || (t.done ? 'done' : 'ongoing'),
+      notes: typeof t.notes === 'string' ? t.notes : '',
+      links: Array.isArray(t.links) ? t.links : [],
+      status: STATUSES.includes(t.status) ? t.status : (t.done ? 'done' : 'ongoing'),
     })),
     expandedTasks: m.expandedTasks || {},
     statusFilter: m.statusFilter || 'all',
@@ -596,7 +509,9 @@ function normalizeHref(raw) {
   if (!raw) return '';
   let s = String(raw).trim();
   if (!s) return '';
-  if (/^[a-z][a-z0-9+\-.]*:/i.test(s)) return s;
+  if (/^[a-z][a-z0-9+\-.]*:/i.test(s) && !/^[a-zA-Z]:[\\/]/.test(s)) {
+    return /^(https?|mailto|tel|file):/i.test(s) ? s : '';
+  }
   if (/^\\\\/.test(s)) return 'file://' + s.replace(/\\/g,'/').replace(/^\/\//,'');
   if (/^[a-zA-Z]:[\\/]/.test(s)) return 'file:///' + s.replace(/\\/g,'/');
   if (s.startsWith('/')) return 'file://' + s;
@@ -626,11 +541,13 @@ let introDismissed = false;
 let introTimer = null;
 
 function dismissIntro() {
-  if (introDismissed) return;
+  clearTimeout(introTimer);
+  introTimer = null;
   introDismissed = true;
   homeEl.classList.remove('intro-active');
   introSplash?.classList.add('hidden');
 }
+document.getElementById('skipIntroBtn').addEventListener('click', dismissIntro);
 
 function meetingRowHTML(m) {
   const d = new Date(m.date + 'T00:00');
@@ -651,7 +568,7 @@ function meetingRowHTML(m) {
   ].filter(Boolean).join('');
 
   return `
-    <div class="meeting-row ${isToday?'is-today':''}" data-id="${m.id}" role="button" tabindex="0" aria-label="Open meeting: ${escapeAttr(m.title || 'Untitled meeting')}, ${escapeAttr(relDate(m.date))}, ${escapeAttr(m.status)}">
+    <div class="meeting-row ${isToday?'is-today':''}" data-id="${escapeAttr(m.id)}" role="button" tabindex="0" aria-label="Open meeting: ${escapeAttr(m.title || 'Untitled meeting')}, ${escapeAttr(relDate(m.date))}, ${escapeAttr(m.status)}">
       <div class="meeting-row-date">
         <div class="mon">${mon}</div>
         <div class="day">${day}</div>
@@ -675,9 +592,15 @@ function meetingRowHTML(m) {
 }
 
 
+function ownedMeetings() {
+  const guestIds = new Set(guestMeetingIds());
+  return state.meetings.filter(meeting => !guestIds.has(meeting.id));
+}
+
 function updateBentoAnalytics() {
   const bentoGrid = document.getElementById('bentoGrid');
-  if (!bentoGrid || !state.meetings.length) {
+  const meetings = ownedMeetings();
+  if (!bentoGrid || !meetings.length) {
     if(bentoGrid) bentoGrid.style.display = 'none';
     return;
   }
@@ -688,7 +611,7 @@ function updateBentoAnalytics() {
   let totalTasks = 0;
   let doneTasks = 0;
 
-  state.meetings.forEach(m => {
+  meetings.forEach(m => {
     totalSec += m.durationSec || 0;
     totalTasks += m.tasks.length;
     doneTasks += m.tasks.filter(t => t.status === 'done').length;
@@ -713,12 +636,13 @@ function updateBentoAnalytics() {
 
 function renderHome() {
   const byStatus = { ongoing: [], scheduled: [], done: [] };
-  state.meetings.forEach(m => byStatus[m.status]?.push(m));
+  const meetings = ownedMeetings();
+  meetings.forEach(m => byStatus[m.status]?.push(m));
   byStatus.scheduled.sort((a,b) => a.date.localeCompare(b.date));
   byStatus.ongoing.sort((a,b) => (b.lastOpenedAt||b.createdAt||'').localeCompare(a.lastOpenedAt||a.createdAt||''));
   byStatus.done.sort((a,b) => b.date.localeCompare(a.date));
 
-  const total = state.meetings.length;
+  const total = meetings.length;
   updateBentoAnalytics();
   if(homeHeading) homeHeading.textContent = total ? 'Your Meetings' : 'Welcome to Clarify';
   if(homeSub) homeSub.textContent = total ? 'Pick one to open or start a new one.' : 'Create your first meeting to get started.';
@@ -752,6 +676,7 @@ function renderHome() {
 
 function showHome() {
   pauseSession();
+  stopP2P();
   if (timerInt) { clearInterval(timerInt); timerInt = null; }
   appEl.style.display = 'none';
   homeEl.classList.remove('hidden');
@@ -771,9 +696,11 @@ function showApp() {
   else updateTimer();
   if (!timerInt) timerInt = setInterval(updateTimer, 1000);
   
-  const isHost = !new URLSearchParams(window.location.search).get('id');
-  if (m && isHost && m.shareEnabled) {
+  const isGuest = m && shareId === m.id && guestMeetingIds().includes(m.id);
+  if (m && !isGuest && m.shareEnabled) {
     initP2P(m, true);
+  } else if (!isGuest) {
+    stopP2P();
   }
   if (document.body.classList.contains('role-viewer')) {
     const micBtn = document.getElementById('topbarMicBtn');
@@ -809,6 +736,8 @@ groupsEl.addEventListener('click', e => {
 });
 
 function openMeeting(id) {
+  // A cached guest copy is not an owned meeting and must be reopened via its link.
+  if (guestMeetingIds().includes(id)) return;
   const m = state.meetings.find(x => x.id === id); if (!m) return;
   state.currentId = id;
   m.lastOpenedAt = new Date().toISOString();
@@ -944,15 +873,30 @@ function renderTeams() {
       </div>`;
     return;
   }
-  list.innerHTML = state.teams.map(t => `
-    <div class="team-card" data-id="${t.id}">
-      <div class="team-name">${escapeHTML(t.name)}</div>
-      ${t.description ? `<div class="team-desc">${escapeHTML(t.description)}</div>` : ''}
-      <div class="team-meta">
-        <span>👥 ${t.members.length} member${t.members.length===1?'':'s'}</span>
-      </div>
-    </div>
-  `).join('');
+  list.replaceChildren();
+  state.teams.forEach(team => {
+    const card = document.createElement('div');
+    card.className = 'team-card';
+    card.dataset.id = team.id;
+    const name = document.createElement('div');
+    name.className = 'team-name';
+    name.textContent = team.name || '';
+    card.appendChild(name);
+    if (team.description) {
+      const description = document.createElement('div');
+      description.className = 'team-desc';
+      description.textContent = team.description;
+      card.appendChild(description);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'team-meta';
+    const count = document.createElement('span');
+    const memberCount = Array.isArray(team.members) ? team.members.length : 0;
+    count.textContent = `👥 ${memberCount} member${memberCount === 1 ? '' : 's'}`;
+    meta.appendChild(count);
+    card.appendChild(meta);
+    list.appendChild(card);
+  });
 }
 
 $$('#homeTabs .tab').forEach(tab => {
@@ -1099,9 +1043,9 @@ function populateVisibilityDropdown() {
   sels.forEach(sel => {
     if (!sel) return;
     const currentVal = sel.value;
-    sel.innerHTML = '<option value="private">Private (Only me)</option>';
+    sel.replaceChildren(new Option('Private (Only me)', 'private'));
     (state.teams || []).forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">Share with: ${escapeHTML(t.name)}</option>`;
+      sel.add(new Option(`Share with: ${t.name}`, t.id));
     });
     // Try to restore previous value if it exists in the new options
     if (Array.from(sel.options).some(o => o.value === currentVal)) {
@@ -1139,7 +1083,7 @@ $('#shareToggle')?.addEventListener('change', (e) => {
   if (m.shareEnabled) {
     initP2P(m, true);
   } else {
-    if (peer) { peer.destroy(); peer = null; p2pConns = []; }
+    stopP2P();
   }
 });
 function updateShareLinks(m) {
@@ -1166,55 +1110,34 @@ $('#copyViewerBtn')?.addEventListener('click', () => {
 
 
 
-/* ==================== HTTP SYNC FALLBACK (Messenger/Firewall Bypass) ==================== */
-let httpSyncInterval = null;
-window.httpConnected = false;
+// Shared meetings use the live PeerJS connection. The old in-memory HTTP relay
+// cannot authenticate or reliably revoke snapshots and must not be used for sync.
+let guestSyncTimer = null;
 
-
-function startHttpPolling(m, isHost) {
-  if (httpSyncInterval) clearInterval(httpSyncInterval);
-  
-  const syncFn = async () => {
-    const localM = cm();
-    if (!localM || !localM.shareEnabled) return;
-    try {
-      const res = await fetch('/api/sync?id=' + localM.id);
-      if (res.ok) {
-        window.httpConnected = true;
-        const serverM = await res.json();
-        
-        // PULL: Server has a newer update (from another collaborator)
-        if (serverM && (serverM.lastUpdated || 0) > (localM.lastUpdated || 0)) {
-          const idx = state.meetings.findIndex(x => x.id === serverM.id);
-          if (idx > -1) state.meetings[idx] = serverM;
-          else state.meetings.push(serverM);
-          state.lastUpdated = serverM.lastUpdated;
-          originalSaveImmediate();
-          refreshUI();
-          renderAvatars();
-        } 
-        // PUSH: Local is newer (we typed something) and needs to push to server
-        else if (serverM && (localM.lastUpdated || 0) > (serverM.lastUpdated || 0)) {
-          fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(()=>{});
-        }
-      } else if (res.status === 404 && isHost) {
-        // Initial push if server empty
-        fetch('/api/sync', { method: 'POST', body: JSON.stringify({ id: localM.id, meeting: localM }), headers: {'Content-Type': 'application/json'} }).catch(()=>{});
-      }
-    } catch (e) {
-      console.warn("HTTP Sync error:", e);
-    }
-  };
-
-  syncFn();
-  httpSyncInterval = setInterval(syncFn, 3000);
+function showGuestWaiting() {
+  const loader = document.getElementById('syncLoader');
+  if (!loader) return;
+  loader.innerHTML = `<div style="max-width:400px;text-align:center;">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <h3 style="color:var(--text);margin:0 0 8px;">Waiting for host</h3>
+    <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">Couldn't connect. Make sure the host has the meeting open and check your connection.</p>
+    <button class="primary-btn" type="button">Go to home</button>
+  </div>`;
+  loader.querySelector('button').addEventListener('click', () => {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    window.location.assign(url.href);
+  });
 }
-
 
 // ==================== P2P INTERNET SYNC (PeerJS) ====================
 let peer = null;
 let p2pConns = [];
 let hostConn = null;
+let peerLoadTimer = null;
+let peerLoadListener = null;
+let peerSetupVersion = 0;
 
 
 const PEER_CONFIG = {
@@ -1226,17 +1149,62 @@ const PEER_CONFIG = {
   }
 };
 
+function cancelPeerSetup() {
+  peerSetupVersion++;
+  clearTimeout(peerLoadTimer);
+  peerLoadTimer = null;
+  if (peerLoadListener) document.getElementById('peerScript')?.removeEventListener('load', peerLoadListener);
+  peerLoadListener = null;
+}
+
+function stopP2P() {
+  cancelPeerSetup();
+  if (peer) peer.destroy();
+  peer = null;
+  p2pConns = [];
+  hostConn = null;
+}
+
 function initP2P(m, isHost) {
-  startHttpPolling(m, isHost);
-  if (typeof Peer === 'undefined') {
-    setTimeout(() => initP2P(m, isHost), 200);
+  stopP2P();
+  const version = peerSetupVersion;
+  const deadline = Date.now() + 8000;
+
+  function waitForPeer() {
+    if (version !== peerSetupVersion || state.currentId !== m.id) return;
+    if (isHost && (!cm() || !cm().shareEnabled)) return;
+    if (typeof Peer === 'undefined') {
+      if (Date.now() < deadline) {
+        peerLoadTimer = setTimeout(waitForPeer, 200);
+      } else {
+        // A slow CDN may finish after the initial timeout. Continue if it does,
+        // unless the user has left the meeting or disabled sharing in the meantime.
+        const script = document.getElementById('peerScript');
+        if (script && !peerLoadListener) {
+          peerLoadListener = () => { peerLoadListener = null; waitForPeer(); };
+          script.addEventListener('load', peerLoadListener, { once: true });
+        }
+        if (isHost) showAuthToast('Live sync could not be loaded. Check your connection and try sharing again.');
+      }
+      return;
+    }
+    peerLoadTimer = null;
+    try {
+      connectP2P(m, isHost);
+    } catch (e) {
+      console.warn('Could not start live sync:', e);
+      if (isHost) showAuthToast('Live sync could not be started. Check your connection and try again.');
+    }
+  }
+  waitForPeer();
+}
+
+function connectP2P(m, isHost) {
+  if (!window.RTCPeerConnection) {
+    showAuthToast('Your browser is blocking live sync. Please open this link in Chrome or Safari.');
     return;
   }
-  
-  if (!window.RTCPeerConnection) {
-    showAuthToast("Warning: Your browser or app (like Messenger) is blocking Live Sync. Please open this link in standard Safari or Chrome.");
-  }
-  
+
   if (peer) { peer.destroy(); peer = null; p2pConns = []; hostConn = null; }
   
   if (isHost && m.shareEnabled) {
@@ -1268,13 +1236,15 @@ function initP2P(m, isHost) {
         }
       });
       conn.on('data', (data) => {
-        if (data.type === 'REQUEST_STATE') {
-          conn.send({ type: 'STATE_PAYLOAD', meeting: cm() });
+        const current = cm();
+        if (!current || current.id !== m.id || !current.shareEnabled || !data) return;
+        if (data.type === 'REQUEST_STATE' && data.id === m.id) {
+          conn.send({ type: 'STATE_PAYLOAD', meeting: current });
         }
-        if (data.type === 'UPDATE' && data.state) {
-          handleIncomingUpdate(data.state);
-          // Bounce to other connected viewers
-          p2pConns.forEach(c => { if(c !== conn && c.open) c.send(data); });
+        if (data.type === 'UPDATE' && data.state && handleIncomingUpdate(data.state)) {
+          // Never forward another user's unrelated meetings or teams.
+          const update = { type: 'UPDATE', state: { meetings: [cm()] } };
+          p2pConns.forEach(c => { if (c !== conn && c.open) c.send(update); });
         }
       });
       conn.on('close', () => { p2pConns = p2pConns.filter(c => c !== conn); renderAvatars(); });
@@ -1296,76 +1266,66 @@ function initP2P(m, isHost) {
     peer.on('open', () => {
       hostConn = peer.connect('clarify-' + m.id, { reliable: true });
       
-      const syncTimeout = setTimeout(() => {
-        const loader = document.getElementById('syncLoader');
-        if (loader && !window.httpConnected) {
-          loader.innerHTML = `<div style="max-width:400px;text-align:center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:16px;color:var(--danger);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            <h3 style="color:var(--text);margin:0 0 8px;">Waiting for Host</h3>
-            <p style="margin:0 0 16px;font-size:14px;color:var(--subtle);">The Host hasn't opened this meeting yet, or they are offline.</p>
-            <button class="primary-btn" onclick="window.location.search='';">Go to Home</button>
-          </div>`;
-        }
-      }, 8000);
-
       hostConn.on('open', () => {
         hostConn.send({ type: 'REQUEST_STATE', id: m.id });
         renderAvatars();
       });
       hostConn.on('data', (data) => {
-        if (data.type === 'STATE_PAYLOAD') {
-          clearTimeout(syncTimeout);
-          const idx = state.meetings.findIndex(x => x.id === data.meeting.id);
-          if (idx > -1) state.meetings[idx] = data.meeting;
-          else state.meetings.push(data.meeting);
-          originalSaveImmediate();
-          refreshUI();
+        if (!data) return;
+        if (data.type === 'STATE_PAYLOAD' && data.meeting && data.meeting.id === m.id) {
+          // A late, older snapshot must not replace a newer copy already received.
+          if (!acceptMeetingSnapshot(data.meeting)) refreshUI();
         }
         if (data.type === 'UPDATE' && data.state) {
           handleIncomingUpdate(data.state);
         }
       });
       hostConn.on('close', () => {
-        clearTimeout(syncTimeout);
         renderAvatars();
-        const loader = document.getElementById('syncLoader');
-        if (loader) loader.textContent = 'Host disconnected. Meeting is offline.';
+        showGuestWaiting();
       });
       hostConn.on('error', () => {
-        clearTimeout(syncTimeout);
         renderAvatars();
+        showGuestWaiting();
       });
     });
   }
 }
 
-function handleIncomingUpdate(incomingState) {
-  if ((incomingState.lastUpdated || 0) < (state.lastUpdated || 0)) return; // Discard old overwrites
-  state = Object.assign(state, incomingState);
-  state.meetings = (state.meetings || []).map(normalizeMeeting);
+function acceptMeetingSnapshot(incoming) {
+  if (!incoming || typeof incoming !== 'object' || incoming.id !== state.currentId) return false;
+  const index = state.meetings.findIndex(meeting => meeting.id === incoming.id);
+  const local = index >= 0 ? state.meetings[index] : null;
+  const localRevision = Number(local?.lastUpdated) || 0;
+  const incomingRevision = Number(incoming.lastUpdated) || 0;
+  if (localRevision && incomingRevision && incomingRevision < localRevision) return false;
+  const meeting = normalizeMeeting(incoming);
+  if (index >= 0) state.meetings[index] = meeting;
+  else state.meetings.push(meeting);
   originalSaveImmediate();
   refreshUI();
+  return true;
+}
+
+function handleIncomingUpdate(incomingState) {
+  if (!incomingState || !Array.isArray(incomingState.meetings)) return false;
+  const meeting = incomingState.meetings.find(m => m && m.id === state.currentId);
+  // Replace only the meeting being shared, never the user's entire local state.
+  return acceptMeetingSnapshot(meeting);
 }
 
 function broadcastUpdate() {
-  const payload = { type: 'UPDATE', state: state };
-  if ((hostConn && hostConn.open) || window.httpConnected) {
+  if (document.body.classList.contains('role-viewer')) return;
+  const current = cm();
+  if (!current || !current.shareEnabled) return;
+  // Do not send other local meetings, teams, or settings to collaborators.
+  const payload = { type: 'UPDATE', state: { meetings: [current] } };
+  if (hostConn && hostConn.open) {
     hostConn.send(payload);
   } else {
-    p2pConns.forEach(c => { if(c.open) c.send(payload); });
-  }
-  
-  // Instant HTTP Fallback push
-  const currentM = cm();
-  if (currentM && currentM.shareEnabled) {
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: currentM.id, meeting: currentM })
-    }).catch(()=>{});
+    p2pConns.forEach(c => { if (c.open) c.send(payload); });
   }
 }
-
 
 function safeUpdateVal(elId, val) {
   const el = document.getElementById(elId);
@@ -1383,7 +1343,10 @@ function safeUpdateVal(elId, val) {
 }
 
 function refreshUI() {
+  clearTimeout(guestSyncTimer);
+  guestSyncTimer = null;
   const loader = document.getElementById('syncLoader');
+  const wasConnecting = !!loader;
   if (loader) loader.remove();
   
   appEl.style.display = '';
@@ -1398,7 +1361,8 @@ function refreshUI() {
     // Smart Render: Do not destroy the DOM if the collaborator is currently typing
     if (!isTyping) {
       renderMeetingHeader();
-      renderAgenda(); 
+      renderAgenda();
+      if (wasConnecting) renderFocus(false);
     } else {
       // Just silently update the header text if they aren't directly editing it
       if (activeId !== 'meetingTitleDisplay') {
@@ -1534,7 +1498,7 @@ const MEETING_TEMPLATES = {
 
 function injectPreMeetingBrief(newMeeting) {
   // Find all past meetings with the exact same title
-  const pastMeetings = state.meetings.filter(m => m.title.toLowerCase() === newMeeting.title.toLowerCase() && m.id !== newMeeting.id);
+  const pastMeetings = ownedMeetings().filter(m => m.title.toLowerCase() === newMeeting.title.toLowerCase() && m.id !== newMeeting.id);
   
   let pendingTasks = [];
   pastMeetings.forEach(m => {
@@ -1645,6 +1609,14 @@ meetingTitleDisplay.addEventListener('blur', () => {
 });
 
 $('#backHome').addEventListener('click', () => {
+  if (shareId && guestMeetingIds().includes(shareId)) {
+    // Leave the guest URL and role behind when returning to the local workspace.
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    window.location.assign(url.href);
+    return;
+  }
   saveImmediate();
   showHome();
 });
@@ -1726,9 +1698,9 @@ function renderAgenda() {
       <span class="agenda-handle" title="Drag to reorder" aria-hidden="true">
         <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="8" cy="2" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="8" cy="12" r="1.2"/></svg>
       </span>
-      <span class="agenda-index">${idx + 1}</span>
-      <span class="agenda-title" data-id="${item.id}">${escapeHTML(item.title || 'Untitled')}</span>
-      <span class="agenda-meta">${item.limitMin ? item.limitMin+'m' : ''}</span>
+      <span class="agenda-index"></span>
+      <span class="agenda-title"></span>
+      <span class="agenda-meta"></span>
       <span class="agenda-actions">
         <button class="mini-btn" data-act="edit" title="Rename" aria-label="Rename topic">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
@@ -1738,6 +1710,11 @@ function renderAgenda() {
         </button>
       </span>
     `;
+    row.querySelector('.agenda-index').textContent = idx + 1;
+    const title = row.querySelector('.agenda-title');
+    title.dataset.id = item.id;
+    title.textContent = item.title || 'Untitled';
+    row.querySelector('.agenda-meta').textContent = item.limitMin ? `${item.limitMin}m` : '';
     agendaListEl.appendChild(row);
   });
   meetingMeta.textContent = m.items.length;
@@ -1801,7 +1778,7 @@ function bindFocusTitle() {
     const item = activeItem(); if (!item) return;
     item.title = t.textContent.trim();
     save();
-    const side = agendaListEl.querySelector(`.agenda-title[data-id="${item.id}"]`);
+    const side = agendaListEl.querySelector(`.agenda-title[data-id="${CSS.escape(String(item.id))}"]`);
     if (side) side.textContent = item.title || 'Untitled';
   });
   t.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } });
@@ -2063,41 +2040,62 @@ function taskCard(t, showTopic=false) {
   const m = cm();
   const el = document.createElement('div');
   const expanded = !!m.expandedTasks[t.id];
-  el.className = `action-card status-${t.status}` + (expanded ? ' expanded' : '');
+  el.className = `action-card status-${STATUSES.includes(t.status) ? t.status : 'ongoing'}` + (expanded ? ' expanded' : '');
   el.dataset.id = t.id;
   const item = m.items.find(i => i.id === t.itemId);
   const linkCount = (t.links || []).length;
   const hasNotes = !!(t.notes && t.notes.trim());
 
-  const meta = [
-    t.owner ? `<span class="meta-chip">👤 ${escapeHTML(t.owner)}</span>` : '',
-    t.due ? `<span class="meta-chip">📅 ${formatDateShort(t.due)}</span>` : '',
-    (showTopic && item) ? `<span class="agenda-tag">› ${escapeHTML(item.title || 'Untitled')}</span>` : '',
-    hasNotes ? `<span class="note-dot" title="Has notes"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>` : '',
-    linkCount ? `<span class="link-count" title="${linkCount} link${linkCount===1?'':'s'}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>${linkCount}</span>` : '',
-  ].filter(Boolean).join('');
-
-  const checkSvg = t.status === 'done'
-    ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
-    : t.status === 'abandoned'
-    ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
-    : '';
-
+  // The template is static; all meeting data is inserted as text or properties.
   el.innerHTML = `
     <div class="action-row" data-act="toggle-expand">
-      <button class="action-check" data-act="cycle" title="Cycle status">${checkSvg}</button>
-      <div class="action-body">
-        <div class="action-name">${escapeHTML(t.name)}</div>
-        ${meta ? `<div class="action-meta">${meta}</div>` : ''}
-      </div>
-      <span class="status-pill ${t.status}">${t.status}</span>
+      <button class="action-check" data-act="cycle" title="Cycle status"></button>
+      <div class="action-body"><div class="action-name"></div></div>
+      <span class="status-pill"></span>
       <button class="delete-btn" data-act="del" title="Delete task">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
       <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-    ${expanded ? renderExpand(t) : ''}
-  `;
+    </div>`;
+  const safeStatus = STATUSES.includes(t.status) ? t.status : 'ongoing';
+  const check = el.querySelector('.action-check');
+  if (safeStatus === 'done') {
+    check.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  } else if (safeStatus === 'abandoned') {
+    check.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  }
+  el.querySelector('.action-name').textContent = t.name || '';
+  const pill = el.querySelector('.status-pill');
+  pill.classList.add(safeStatus);
+  pill.textContent = safeStatus;
+  const meta = document.createElement('div');
+  meta.className = 'action-meta';
+  const addTextMeta = (className, text) => {
+    const span = document.createElement('span');
+    span.className = className;
+    span.textContent = text;
+    meta.appendChild(span);
+  };
+  if (t.owner) addTextMeta('meta-chip', `👤 ${t.owner}`);
+  if (t.due) addTextMeta('meta-chip', `📅 ${formatDateShort(t.due)}`);
+  if (showTopic && item) addTextMeta('agenda-tag', `› ${item.title || 'Untitled'}`);
+  if (hasNotes) {
+    const note = document.createElement('span');
+    note.className = 'note-dot';
+    note.title = 'Has notes';
+    note.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    meta.appendChild(note);
+  }
+  if (linkCount) {
+    const count = document.createElement('span');
+    count.className = 'link-count';
+    count.title = `${linkCount} link${linkCount === 1 ? '' : 's'}`;
+    count.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+    count.appendChild(document.createTextNode(String(linkCount)));
+    meta.appendChild(count);
+  }
+  if (meta.childNodes.length) el.querySelector('.action-body').appendChild(meta);
+  if (expanded) el.appendChild(renderExpand(t));
 
   el.querySelector('[data-act="toggle-expand"]').addEventListener('click', (e) => {
     if (e.target.closest('[data-act="cycle"]') || e.target.closest('[data-act="del"]')) return;
@@ -2135,76 +2133,98 @@ function taskCard(t, showTopic=false) {
 
 function renderExpand(t) {
   const links = t.links || [];
-  return `
-    <div class="action-expand">
-      <div>
-        <div class="field-label">
-          <span>Status</span>
-          <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">
-            Notes for this task slide in on the left ←
-          </span>
-        </div>
-        <select class="status-select" data-task="${t.id}" data-field="status">
-          <option value="ongoing"   ${t.status==='ongoing'?'selected':''}>Ongoing</option>
-          <option value="done"      ${t.status==='done'?'selected':''}>Done</option>
-          <option value="abandoned" ${t.status==='abandoned'?'selected':''}>Abandoned</option>
-        </select>
+  const expand = document.createElement('div');
+  expand.className = 'action-expand';
+  expand.innerHTML = `
+    <div>
+      <div class="field-label">
+        <span>Status</span>
+        <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">Notes for this task slide in on the left ←</span>
       </div>
-      <div>
-        <div class="field-label">
-          <span>Links &amp; Attachments</span>
-          <span style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;">${links.length} item${links.length===1?'':'s'}</span>
-        </div>
-        <div class="links-list" id="links-${t.id}">
-          ${links.length ? links.map(l => linkRowHTML(t.id, l)).join('') : '<div class="empty-list" style="padding:8px;">No links yet.</div>'}
-        </div>
-        <div class="link-form" data-task="${t.id}">
-          <input data-link-field="label" placeholder="Label (optional)" />
-          <input data-link-field="url" placeholder="URL or /path/to/folder" />
-          <button data-link-add>+ Add</button>
-        </div>
-        <div class="link-hint">
-          Tip: paste a URL (https://…), a local file path (e.g. <code>/Users/me/Docs</code> or <code>C:\\Projects</code>),
-          or a UNC share. Local <code>file://</code> links may need to be opened from your file manager.
-        </div>
-      </div>
+      <select class="status-select" data-field="status">
+        <option value="ongoing">Ongoing</option>
+        <option value="done">Done</option>
+        <option value="abandoned">Abandoned</option>
+      </select>
     </div>
-  `;
+    <div>
+      <div class="field-label">
+        <span>Links &amp; Attachments</span>
+        <span class="links-count" style="color:var(--subtle);font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;"></span>
+      </div>
+      <div class="links-list"></div>
+      <div class="link-form">
+        <input data-link-field="label" placeholder="Label (optional)" />
+        <input data-link-field="url" placeholder="URL or /path/to/folder" />
+        <button data-link-add>+ Add</button>
+      </div>
+      <div class="link-hint">Tip: paste a URL (https://…), a local file path (e.g. <code>/Users/me/Docs</code> or <code>C:\\Projects</code>),
+        or a UNC share. Local <code>file://</code> links may need to be opened from your file manager.</div>
+    </div>`;
+  const select = expand.querySelector('.status-select');
+  select.dataset.task = t.id;
+  select.value = STATUSES.includes(t.status) ? t.status : 'ongoing';
+  expand.querySelector('.links-count').textContent = `${links.length} item${links.length === 1 ? '' : 's'}`;
+  const list = expand.querySelector('.links-list');
+  list.id = 'links-' + t.id;
+  if (links.length) links.forEach(link => list.appendChild(linkRow(t.id, link)));
+  else {
+    const empty = document.createElement('div');
+    empty.className = 'empty-list';
+    empty.style.padding = '8px';
+    empty.textContent = 'No links yet.';
+    list.appendChild(empty);
+  }
+  expand.querySelector('.link-form').dataset.task = t.id;
+  return expand;
 }
-function linkRowHTML(taskId, l) {
+
+function linkRow(taskId, l) {
   const href = normalizeHref(l.url);
   const local = isLocalLink(href);
   const display = l.label && l.label.trim() ? l.label : (local ? linkDisplay(href) : (linkHostname(href) || href));
   const sub = local ? linkDisplay(href) : href;
-  return `
-    <div class="link-row" data-link-id="${l.id}" data-task="${taskId}">
-      <span class="link-icon" title="${local ? 'Local folder/file' : 'Web link'}">
-        ${local
-          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
-          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'}
-      </span>
-      <a class="link-text" href="${escapeAttr(href)}" target="_blank" rel="noopener" title="${escapeAttr(href)}">
-        <div class="link-label">${escapeHTML(display)}</div>
-        ${l.label && sub && sub !== display ? `<div class="link-url">${escapeHTML(sub)}</div>` : ''}
-      </a>
-      <div class="link-actions">
-        <button class="mini-btn" data-link-act="copy" title="Copy path">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button class="mini-btn" data-link-act="del" title="Remove link">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-    </div>
-  `;
+  const row = document.createElement('div');
+  row.className = 'link-row';
+  row.dataset.linkId = l.id;
+  row.dataset.task = taskId;
+  row.innerHTML = `
+    <span class="link-icon"></span>
+    <a class="link-text" target="_blank" rel="noopener"><div class="link-label"></div></a>
+    <div class="link-actions">
+      <button class="mini-btn" data-link-act="copy" title="Copy path">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button class="mini-btn" data-link-act="del" title="Remove link">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>`;
+  const icon = row.querySelector('.link-icon');
+  if (local) {
+    icon.title = 'Local folder/file';
+    icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+  } else {
+    icon.title = 'Web link';
+    icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  }
+  const anchor = row.querySelector('.link-text');
+  anchor.setAttribute('href', href);
+  anchor.title = href;
+  anchor.querySelector('.link-label').textContent = display;
+  if (l.label && sub && sub !== display) {
+    const url = document.createElement('div');
+    url.className = 'link-url';
+    url.textContent = sub;
+    anchor.appendChild(url);
+  }
+  return row;
 }
-
 function wireExpand(cardEl, t) {
   const m = cm();
-  const sel = cardEl.querySelector(`select[data-task="${t.id}"]`);
+  const sel = cardEl.querySelector('.status-select');
   sel?.addEventListener('change', () => { t.status = sel.value; save(); renderActions(); });
 
-  const form = cardEl.querySelector(`.link-form[data-task="${t.id}"]`);
+  const form = cardEl.querySelector('.link-form');
   const labelInp = form?.querySelector('[data-link-field="label"]');
   const urlInp   = form?.querySelector('[data-link-field="url"]');
   const addBtn   = form?.querySelector('[data-link-add]');
@@ -2317,7 +2337,7 @@ agendaListEl.addEventListener('keydown', e => {
     save(); renderAgenda(); renderFocus(true);
     slideTaskNotesOut();
     // Keep focus on the corresponding row after re-render
-    const again = agendaListEl.querySelector(`.agenda-item[data-id="${id}"]`);
+    const again = agendaListEl.querySelector(`.agenda-item[data-id="${CSS.escape(String(id))}"]`);
     again?.focus();
   }
 });
@@ -2468,7 +2488,7 @@ shortcutsModal.addEventListener('click', (e) => { if (e.target === shortcutsModa
 shortcutsModal.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeShortcuts));
 
 document.addEventListener('keydown', e => {
-  // Home screen: require clicking the intro CTA before proceeding
+  // Ignore home shortcuts until the intro has been dismissed.
   if (!homeEl.classList.contains('hidden')) {
     if (!introDismissed) {
       
@@ -2800,8 +2820,8 @@ function exportPDF() {
         html += `
           <div class="pr-task">
             <div class="pr-task-head">
-              <span class="pr-task-name ${t.status}">${escapeHTML(t.name)}</span>
-              <span class="pr-status ${t.status}">${t.status}</span>
+              <span class="pr-task-name ${escapeAttr(t.status)}">${escapeHTML(t.name)}</span>
+              <span class="pr-status ${escapeAttr(t.status)}">${escapeHTML(t.status)}</span>
             </div>
             ${metaParts.length ? `<div class="pr-task-meta">${metaParts.join(' · ')}</div>` : ''}
             ${t.notes && t.notes.trim() ? `<div class="pr-task-notes">${escapeHTML(t.notes)}</div>` : ''}
@@ -2847,8 +2867,8 @@ function exportPDF() {
       html += `
         <div class="pr-task">
           <div class="pr-task-head">
-            <span class="pr-task-name ${t.status}">${escapeHTML(t.name)}</span>
-            <span class="pr-status ${t.status}">${t.status}</span>
+            <span class="pr-task-name ${escapeAttr(t.status)}">${escapeHTML(t.name)}</span>
+            <span class="pr-status ${escapeAttr(t.status)}">${escapeHTML(t.status)}</span>
           </div>
           ${metaParts.length ? `<div class="pr-task-meta">${metaParts.join(' · ')}</div>` : ''}
           ${t.notes && t.notes.trim() ? `<div class="pr-task-notes">${escapeHTML(t.notes)}</div>` : ''}
@@ -2885,82 +2905,6 @@ function download(content, filename, type='text/plain') {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function slug(s) { return (s||'untitled').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40); }
-
-/* ================================ BOOT =================================== */
-applyTheme();
-introTimer = setTimeout(() => dismissIntro(), 3000);
-
-const urlParams = new URLSearchParams(window.location.search);
-const shareId = urlParams.get('id');
-const userRole = urlParams.get('role');
-let currentUser = null;
-try { currentUser = localStorage.getItem('clarify_user'); } catch(e) {}
-
-if (shareId) {
-  // Check if we own this meeting locally
-  const sm = state.meetings.find(x => x.id === shareId);
-  
-  if (sm) {
-    // IT IS OUR MEETING
-    state.currentId = shareId;
-    introDismissed = true;
-    homeEl.classList.remove('intro-active');
-    introSplash?.classList.add('hidden');
-    
-    
-  let storageWorks = true;
-  try { localStorage.setItem('test', '1'); localStorage.removeItem('test'); } catch(e) { storageWorks = false; }
-  
-  if (!storageWorks && !shareId) {
-    showAuthToast("Warning: You are using an in-app browser or strict privacy mode that blocks Local Storage. Your meetings will NOT be saved. Please open this app in Chrome or Safari.");
-  }
-
-  if (!currentUser) {
-      // We own it, but we are logged out. Force login.
-      document.getElementById('authScreen').classList.add('show');
-      homeEl.classList.add('hidden');
-      appEl.style.display = 'none';
-    } else {
-      showApp(); // Load as HOST with full permissions
-    }
-    
-  } else {
-    // IT IS NOT OUR MEETING. WE ARE A GUEST.
-    state.currentId = shareId;
-    introDismissed = true;
-    homeEl.classList.remove('intro-active');
-    introSplash?.classList.add('hidden');
-    
-    if (userRole === 'viewer' || userRole === 'editor') {
-      document.body.classList.toggle('role-viewer', userRole === 'viewer');
-      initP2P({ id: shareId }, false);
-    }
-    
-    appEl.style.display = '';
-    homeEl.classList.add('hidden');
-    const loader = document.createElement('div');
-    loader.id = 'syncLoader';
-    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text);';
-    loader.innerHTML = `<div style="max-width:300px;text-align:center;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite; color:var(--accent); margin-bottom:16px;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Connecting to Host...</div>
-        <div style="font-size:13px; color:var(--muted);">Syncing meeting data securely.</div>
-      </div>`;
-    document.body.appendChild(loader);
-  }
-} else {
-  // STANDARD BOOT
-  if (!currentUser) {
-    document.getElementById('authScreen').classList.add('show');
-    homeEl.classList.add('hidden');
-    appEl.style.display = 'none';
-  } else {
-    state.currentId = null;
-    saveImmediate();
-    renderHome();
-  }
-}
-
 
 /* ==================== WEB AUDIO DICTATION (Speech-to-Text) ==================== */
 let recognition = null;
@@ -3390,3 +3334,71 @@ document.getElementById('topbarMicBtn')?.addEventListener('click', () => toggleM
 /* Disable mic in viewer mode */
 
 /* ========================================================================= */
+
+/* ================================ BOOT =================================== */
+applyTheme();
+
+const urlParams = new URLSearchParams(window.location.search);
+const shareId = urlParams.get('id');
+const userRole = urlParams.get('role') === 'editor' ? 'editor' : 'viewer';
+let currentUser = getStorage('clarify_user');
+
+// A cached guest meeting is not an owned local meeting on the next visit.
+const GUEST_MEETINGS_KEY = 'clarify_guest_meetings';
+function guestMeetingIds() {
+  try {
+    const ids = JSON.parse(getStorage(GUEST_MEETINGS_KEY) || '[]');
+    return Array.isArray(ids) ? ids : [];
+  } catch { return []; }
+}
+function rememberGuestMeeting(id) {
+  const ids = guestMeetingIds();
+  if (!ids.includes(id)) setStorage(JSON.stringify([...ids, id]), GUEST_MEETINGS_KEY);
+}
+
+if (shareId) {
+  const guestIds = guestMeetingIds();
+  const ownedMeeting = state.meetings.find(m => m.id === shareId && !guestIds.includes(m.id));
+  dismissIntro();
+  state.currentId = shareId;
+
+  if (ownedMeeting) {
+    if (!currentUser) {
+      authScreen.classList.add('show');
+      homeEl.classList.add('hidden');
+      appEl.style.display = 'none';
+    } else {
+      showApp();
+    }
+  } else {
+    rememberGuestMeeting(shareId);
+    document.body.classList.toggle('role-viewer', userRole === 'viewer');
+    homeEl.classList.add('hidden');
+    appEl.style.display = '';
+    const loader = document.createElement('div');
+    loader.id = 'syncLoader';
+    loader.setAttribute('role', 'status');
+    loader.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text);';
+    loader.innerHTML = `<div style="max-width:300px;text-align:center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite; color:var(--accent); margin-bottom:16px;" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Connecting to host...</div>
+      <div style="font-size:13px; color:var(--muted);">Syncing meeting data.</div>
+    </div>`;
+    document.body.appendChild(loader);
+    // This timeout starts independently of PeerJS, so blocked CDNs or offline hosts cannot leave an endless loader.
+    guestSyncTimer = setTimeout(showGuestWaiting, 8000);
+    initP2P({ id: shareId }, false);
+  }
+} else if (!currentUser) {
+  dismissIntro();
+  authScreen.classList.add('show');
+  homeEl.classList.add('hidden');
+  appEl.style.display = 'none';
+} else {
+  state.currentId = null;
+  saveImmediate();
+  renderHome();
+  introTimer = setTimeout(dismissIntro, 3000);
+}
+
+window.clarifyStartup?.ready();

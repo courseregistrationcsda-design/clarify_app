@@ -6,74 +6,35 @@
 <title>Clarify — Meeting Companion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/css/styles.css?v=20261028-3">
+  <script async id="peerScript" src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-<!-- ===================== AUTHENTICATION SCREEN ===================== -->
+<!-- ===================== LOCAL / GUEST ACCESS ===================== -->
 <div class="auth-screen" id="authScreen">
-  
-  <!-- Login View -->
   <div class="auth-card" id="authLoginView">
     <div class="auth-logo"><span class="brand-dot"></span> Clarify</div>
-    <div class="auth-sub">Sign in to your workspace</div>
-    <input type="email" class="auth-input" placeholder="name@company.com" id="loginEmail" aria-label="Email address" />
-    <input type="password" class="auth-input" placeholder="Password" id="loginPass" aria-label="Password" />
-    <button class="auth-btn" id="loginBtn">Sign In</button>
-    <div class="auth-footer">
-      <span class="auth-link" role="button" tabindex="0" id="navToForgotBtn">Forgot password?</span>
-      <span class="auth-link" id="navToSignupBtn" style="color:var(--accent);" role="button" tabindex="0">Create account</span>
-    </div>
+    <div class="auth-sub">Open your workspace on this device. Meetings are saved in this browser and are not protected by an account.</div>
+    <button class="auth-btn" id="continueLocalBtn" type="button">Open local workspace</button>
     <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border);">
-      <span class="auth-link" role="button" tabindex="0" id="navToGuestBtn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        Continue as Guest
-      </span>
+      <button class="auth-link" type="button" id="navToGuestBtn" style="font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        Join a shared meeting
+      </button>
     </div>
   </div>
 
-
-  <!-- Guest View -->
   <div class="auth-card" id="authGuestView" style="display: none;">
     <div class="auth-logo"><span class="brand-dot" style="background:var(--success);"></span> Guest Access</div>
     <div class="auth-sub">Enter your shared meeting link or ID to join.</div>
-    
     <input type="text" class="auth-input" placeholder="e.g. clarify.com/?id=xyz&role=viewer" id="guestLinkInput" aria-label="Guest meeting link or ID" />
-    <button class="auth-btn" id="joinGuestBtn">Join Meeting</button>
-
+    <button class="auth-btn" id="joinGuestBtn" type="button">Join Meeting</button>
     <div class="auth-footer" style="justify-content: center; margin-top: 16px;">
-      <span class="auth-link" role="button" tabindex="0" id="navToLoginFromGuestBtn">← Back to log in</span>
+      <button class="auth-link" type="button" id="navToLoginFromGuestBtn">← Back</button>
     </div>
   </div>
-
-  <!-- Forgot Password View -->
-  <div class="auth-card" id="authForgotView" style="display: none;">
-    <div class="auth-logo"><span class="brand-dot" style="background:var(--warn);"></span> Reset Password</div>
-    <div class="auth-sub" id="forgotSubtitle">Enter your email to receive a 6-digit reset code.</div>
-    
-    <!-- Step 1: Request Code -->
-    <div id="forgotStep1">
-      <input type="email" class="auth-input" placeholder="name@company.com" id="forgotEmail" aria-label="Email address for reset" />
-      <button class="auth-btn" id="sendCodeBtn">Send Reset Code</button>
-    </div>
-    
-    <!-- Step 2: Enter Code & New Password -->
-    <div id="forgotStep2" style="display: none;">
-      <input type="text" class="auth-input" placeholder="6-digit code" id="resetCode" aria-label="6-digit reset code" maxlength="6" style="letter-spacing: 0.5em; text-align: center; font-weight: 600;" />
-      <input type="password" class="auth-input" placeholder="New Password" id="newPass" aria-label="New Password" />
-      <button class="auth-btn" id="resetPassBtn">Reset Password & Login</button>
-      <div style="text-align:center; margin-top:8px;">
-        <span class="auth-link" role="button" tabindex="0" id="resendCodeBtn" style="font-size:12px;">Didn't receive it? Resend Code</span>
-      </div>
-    </div>
-
-    <div class="auth-footer" style="justify-content: center; margin-top: 16px;">
-      <span class="auth-link" role="button" tabindex="0" id="navToLoginBtn">← Back to log in</span>
-    </div>
-  </div>
-
 </div>
 
 
@@ -84,6 +45,7 @@
       <h1 class="intro-title">Clarify</h1>
       <p class="intro-tagline">Where meetings find focus.</p>
       <p class="intro-copy">To help users plan, guide, and conclude conversations with clarity through beautifully structured, effortlessly calm workflows.</p>
+      <button class="intro-enter" id="skipIntroBtn" type="button">Skip intro</button>
     </div>
   </div>
 
@@ -98,7 +60,7 @@
       </div>
     </div>
 
-        <div class="tabs" id="homeTabs">
+    <div class="tabs" id="homeTabs">
       <div class="tab active" data-tab="meetings">Meetings</div>
       <div class="tab" data-tab="teams">Teams</div>
     </div>
@@ -106,18 +68,19 @@
     <div id="viewMeetings">
       <h1 class="home-heading" id="homeHeading">Your Meetings</h1>
     
-      <button class="shortcut-hint" id="homeSearchBtn" title="Global Search" style="margin-bottom:28px;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        Cmd K
+      <div>
+        <button class="shortcut-hint" id="homeSearchBtn" title="Global Search" style="margin-bottom:28px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Cmd K
+        </button>
+      </div>
+
+      <button class="new-meeting-btn" id="openNewMeeting">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New meeting
       </button>
-    </div>
 
-    <button class="new-meeting-btn" id="openNewMeeting">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New meeting
-    </button>
-
-    <div id="meetingGroups"></div>
+      <div id="meetingGroups"></div>
     </div>
 
     <div id="viewTeams" style="display: none;">
@@ -176,7 +139,8 @@
           <option value="discovery">Client Discovery</option>
           <option value="retro">Sprint Retrospective</option>
         </select>
-      </div>\n      <div class="field">
+      </div>
+      <div class="field">
         <label class="field-label-sm" for="meetingTitleInput">Title</label>
         <input id="meetingTitleInput" class="modal-input" placeholder="e.g. Weekly product review" autocomplete="off" />
       </div>
@@ -259,7 +223,7 @@
       <div class="field" style="flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div>
           <label class="field-label-sm" style="margin:0; font-size:13px; color:var(--text); text-transform:none; letter-spacing:0;">Share via Link</label>
-          <div style="font-size:11px; color:var(--muted); margin-top:4px;">Anyone with the link can access</div>
+          <div style="font-size:11px; color:var(--muted); margin-top:4px;">Anyone with the link can access and may edit</div>
         </div>
         <label class="switch">
           <input type="checkbox" id="shareToggle">
@@ -267,6 +231,7 @@
         </label>
       </div>
 
+      <p style="font-size:12px;color:var(--muted);margin:0 0 16px;">Sharing is experimental and not access-controlled. A viewer link can be changed to edit. Share only with trusted people and do not share sensitive information.</p>
       <div id="shareLinksContainer" style="display:none; flex-direction:column; gap:16px;">
         <div class="field">
           <label class="field-label-sm">Collaborator Link (Can edit)</label>
@@ -276,7 +241,7 @@
           </div>
         </div>
         <div class="field">
-          <label class="field-label-sm">Viewer Link (Read-only)</label>
+          <label class="field-label-sm">Viewer Link (viewing mode only)</label>
           <div style="display:flex; gap:8px;">
             <input id="viewerLinkInput" class="modal-input" readonly style="flex:1; font-size:12px; color:var(--muted);" />
             <button class="ghost-btn" id="copyViewerBtn" style="padding:6px 12px;">Copy</button>
@@ -528,9 +493,6 @@
 
 <div id="printRoot"></div>
 
-<script src="js/app.js"></script>
-
-
 <div class="integration-toast" id="authToast" style="z-index:100001; bottom: auto; top: 32px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
         <span class="integration-toast-text" id="authToastText">Notice</span>
@@ -555,5 +517,33 @@
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
 </div>
 
+<!-- This small watchdog works even if the main script fails to load or parse. -->
+<div class="startup-error" id="startupError" role="alert" hidden>
+  <div class="auth-card">
+    <div class="auth-logo">Clarify couldn't start</div>
+    <div class="auth-sub">Please check your connection and try reloading. Your locally saved meetings will not be removed.</div>
+    <button class="auth-btn" id="startupRetry" type="button">Reload Clarify</button>
+  </div>
+</div>
+<noscript>
+  <div class="startup-error" role="alert">
+    <div class="auth-card">
+      <div class="auth-logo">JavaScript is required</div>
+      <div class="auth-sub">Enable JavaScript in your browser, then reload Clarify.</div>
+    </div>
+  </div>
+</noscript>
+<script>
+  (function () {
+    const errorScreen = document.getElementById('startupError');
+    const timer = window.setTimeout(function () { errorScreen.hidden = false; }, 8000);
+    document.getElementById('startupRetry').addEventListener('click', function () { window.location.reload(); });
+    window.clarifyStartup = {
+      fail: function () { window.clearTimeout(timer); errorScreen.hidden = false; },
+      ready: function () { window.clearTimeout(timer); errorScreen.hidden = true; }
+    };
+  })();
+</script>
+<script src="/js/app.js?v=20261028-3" onerror="window.clarifyStartup.fail()"></script>
 </body>
 </html>

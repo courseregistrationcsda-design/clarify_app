@@ -1,0 +1,17 @@
+{
+  "name": "Clarify Meeting Companion",
+  "short_name": "Clarify",
+  "description": "The AI notepad for back-to-back meetings.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

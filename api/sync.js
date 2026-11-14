@@ -1,6 +1,3 @@
-// Vercel Serverless Function (Node.js runtime)
-// Acts as an in-memory HTTP relay to bypass strict in-app browser firewalls (like Messenger)
-
 let cache = {};
 
 export default async function handler(req, res) {
@@ -14,9 +11,8 @@ export default async function handler(req, res) {
     const { id, meeting } = req.body;
     if (id && meeting) {
       const existing = cache[id];
-      // Delta check: Only update the server if the incoming meeting has a newer timestamp
       if (!existing || (meeting.lastUpdated || 0) >= (existing.meeting.lastUpdated || 0)) {
-        cache[id] = { meeting, timestamp: Date.now() };
+        cache[id] = { meeting, timestamp: Date.now(), password: meeting.meetingPassword };
       }
       return res.status(200).json({ success: true });
     }
@@ -24,8 +20,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const { id } = req.query;
+    const { id, pwd } = req.query;
     if (cache[id]) {
+      // Validate password if it exists on the meeting
+      if (cache[id].password && cache[id].password !== pwd) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
       return res.status(200).json(cache[id].meeting);
     }
     return res.status(404).json({ error: 'Meeting not found' });

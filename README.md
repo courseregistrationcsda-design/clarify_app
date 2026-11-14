@@ -1,31 +1,29 @@
-# Clarify
+# Clarify - AI Meeting Workspace
 
-Clarify is a browser-based meeting workspace built with HTML, CSS, and vanilla JavaScript.
+Clarify is a serverless, real-time AI meeting workspace optimized for professionals with back-to-back meetings. It uses WebRTC for true P2P synchronization, the Web Speech API for local audio dictation, native Spatial Video Conferencing,, and OpenAI for structuring raw notes into perfect agendas.
 
-## Run locally
+## Deployment
 
-Serve the repository over HTTP (rather than opening `index.html` directly):
+Clarify is optimized for **Vercel Edge Functions**.
 
-```sh
-python3 -m http.server 4173 --bind 0.0.0.0
-```
+1. Fork or clone this repository.
+2. Import the project in Vercel.
+3. Add your environment variables (see below).
+4. Deploy!
 
-Open the served page and choose **Open local workspace**, or join using a shared meeting link. The static server serves the frontend only; the Vercel functions in `api/` require a Vercel environment to run.
+## Environment Variables
 
-## Storage and access
+For production, you must set these variables in your Vercel Dashboard:
 
-Meetings are stored in the current browser's local storage. There is no account authentication or working password recovery backend in this prototype; local access is not password-protected. A browser that blocks storage can still open a temporary workspace, but its meetings will be lost when the page closes.
+- \`OPENAI_API_KEY\`: Required for the AI Enhancement ("Magic") button and Whisper audio transcription.
+- \`RESEND_API_KEY\`: Required for sending actual emails for password resets and team invites.
 
-Shared links require a live PeerJS connection and the host to keep the meeting open. Sharing is experimental and not access-controlled: a viewer can change their link to edit, so share only with trusted people and do not share sensitive information. The prototype in-memory HTTP relay is not used for syncing.
+See \`.env.example\` for the layout.
 
-## Tests
+## Documentation
 
-With Node.js 20+ and Python 3 installed:
+For a full breakdown of the architecture, SOPs, and design rules, see \`DOCUMENTATION.md\`.
 
-```sh
-npm ci
-npx playwright install chromium
-npm test
-```
 
-The browser tests cover startup, local storage, meeting creation, and shared-link recovery. They mock external services rather than testing a live Vercel deployment or PeerJS server.
+## Client Guide
+Please see `CLIENT_GUIDE.md` for a comprehensive, non-technical overview of how to use the app.

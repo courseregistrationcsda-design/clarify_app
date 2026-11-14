@@ -62,10 +62,7 @@ document.getElementById('joinGuestBtn')?.addEventListener('click', (e) => {
       
       // If it's a completely new user, show the splash screen
       if (!state.meetings.length) {
-        introDismissed = false; // Reset the flag so it doesn't freeze!
-        document.getElementById('homeScreen').classList.add('intro-active');
-        document.getElementById('introSplash').classList.remove('hidden');
-        introTimer = setTimeout(() => dismissIntro(), 8000);
+        
       }
     });
   }, 1200);
@@ -621,16 +618,6 @@ const groupsEl = $('#meetingGroups');
 const homeHeading = $('#homeHeading');
 const homeSub = $('#homeSub');
 const introSplash = $('#introSplash');
-
-let introDismissed = false;
-let introTimer = null;
-
-function dismissIntro() {
-  if (introDismissed) return;
-  introDismissed = true;
-  homeEl.classList.remove('intro-active');
-  introSplash?.classList.add('hidden');
-}
 
 function meetingRowHTML(m) {
   const d = new Date(m.date + 'T00:00');
@@ -2954,9 +2941,7 @@ if (shareId) {
   if (sm) {
     // IT IS OUR MEETING
     state.currentId = shareId;
-    introDismissed = true;
-    homeEl.classList.remove('intro-active');
-    introSplash?.classList.add('hidden');
+    
     
     
   let storageWorks = true;
@@ -2978,9 +2963,7 @@ if (shareId) {
   } else {
     // IT IS NOT OUR MEETING. WE ARE A GUEST.
     state.currentId = shareId;
-    introDismissed = true;
-    homeEl.classList.remove('intro-active');
-    introSplash?.classList.add('hidden');
+    
     
     if (userRole === 'viewer' || userRole === 'editor') {
       if (!urlPwd) {
